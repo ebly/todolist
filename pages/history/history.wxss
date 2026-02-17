@@ -1,0 +1,195 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f7f8f9;
+  position: relative;
+}
+
+.clear-btn {
+  font-size: 14px;
+  color: #ff4d4f;
+  padding: 8px 12px;
+}
+
+.calendar-section {
+  flex-shrink: 0;
+  background-color: #ffffff;
+}
+
+.calendar {
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 4px;
+}
+
+.month-nav-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin: 0 8px;
+}
+
+.nav-arrow {
+  font-size: 16px;
+  color: #323233;
+  font-weight: bold;
+}
+
+.add-btn-text {
+  font-size: 14px;
+  color: #1989fa;
+  padding: 8px 12px;
+}
+
+.current-month {
+  font-size: 16px;
+  font-weight: 600;
+  color: #323233;
+}
+
+.calendar-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.weekdays-row {
+  display: flex;
+  background-color: #f5f5f5;
+  padding: 8px 0;
+}
+
+.weekday {
+  flex: 1;
+  text-align: center;
+  font-size: 12px;
+  color: #969799;
+}
+
+.weekday:first-child,
+.weekday:last-child {
+  color: #ee6666;
+}
+
+.calendar-body {
+  padding: 0 8px;
+}
+
+.days-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.week-row {
+  display: flex;
+}
+
+.day-cell {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  height: 40px;
+}
+
+.day-cell.empty {
+  background-color: transparent;
+  border: 1px solid transparent;
+}
+
+.day-cell.today .day-text {
+  color: #323233;
+  font-weight: 600;
+}
+
+/* 有未完成待办的日期 - 浅绿色底色 */
+.day-cell.has-todo-incomplete {
+  background-color: #e6f7ed;
+  border: 1px solid #e6f7ed;
+}
+
+/* 有待办未完成 - 浅绿色圈圈 */
+.day-text.has-incomplete {
+  background-color: #e6f7ed;
+  color: #07c160;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
+}
+
+/* 全部完成 - 绿色圈圈 */
+.day-text.has-completed {
+  background-color: #07c160;
+  color: #ffffff;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.day-cell.past {
+  background-color: #e0e0e0;
+  border: 1px solid #e0e0e0;
+}
+
+.day-cell.today-bg {
+  background-color: #bbdefb;
+  border: 1px solid #bbdefb;
+}
+
+.day-cell.future {
+  background-color: #f5f5f5;
+  border: 1px solid #f5f5f5;
+}
+
+.day-cell.selected {
+  border: 1px solid #1989fa;
+}
+
+.day-text {
+  font-size: 14px;
+  color: #323233;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.selected-date-section {
+  background-color: #ffffff;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.selected-todos {
+  flex: 1;
+  background-color: #ffffff;
+}
+
+.empty-tip {
+  text-align: center;
+  color: #969799;
+  padding: 40px 0;
+}

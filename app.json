@@ -1,0 +1,33 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/history/history"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTitleText": "划掉",
+    "navigationBarTextStyle": "black"
+  },
+  "tabBar": {
+    "color": "#969799",
+    "selectedColor": "#1989fa",
+    "backgroundColor": "#ffffff",
+    "borderStyle": "black",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "今日待办",
+        "iconPath": "assets/tab/todo.png",
+        "selectedIconPath": "assets/tab/todo-active.png"
+      },
+      {
+        "pagePath": "pages/history/history",
+        "text": "历史记录",
+        "iconPath": "assets/tab/calendar.png",
+        "selectedIconPath": "assets/tab/calendar-active.png"
+      }
+    ]
+  },
+  "sitemapLocation": "sitemap.json"
+}

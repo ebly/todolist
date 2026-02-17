@@ -1,0 +1,73 @@
+<view class="container">
+  <scroll-view class="todo-list" scroll-y enable-flex>
+    <view wx:if="{{todos.length === 0}}" class="empty-tip">暂无待办事项</view>
+
+    <view class="todo-collapse-list">
+      <block wx:for="{{todos}}" wx:for-index="index" wx:key="_id">
+        <view class="todo-wrapper {{index !== todos.length - 1 ? 'has-border' : ''}}">
+          <van-swipe-cell right-width="{{item.completed || item.abandoned ? (0) : (120)}}" disabled="{{item.completed || item.abandoned}}" data-id="{{item._id}}">
+            <view class="todo-item {{item.completed ? 'completed' : ''}} {{item.abandoned ? 'abandoned' : ''}}" bindtap="onToggleExpand" data-id="{{item._id}}">
+              <view class="importance-bar importance-{{item.importance ? item.importance : 2}}"></view>
+              <view class="todo-header">
+                <view class="todo-title-row">
+                  <text class="todo-title">{{item.title}}</text>
+                  <view class="expand-arrow {{expandedTodoId === item._id ? 'expanded' : ''}}">▼</view>
+                </view>
+              </view>
+            </view>
+            <view slot="right" class="swipe-right-actions" data-id="{{item._id}}">
+              <view class="action-btn edit" catchtap="onToggleTodo" data-id="{{item._id}}">完成</view>
+              <view class="action-btn delete" catchtap="onAbandonTodo" data-id="{{item._id}}">放弃</view>
+            </view>
+          </van-swipe-cell>
+          <view class="todo-collapse-content {{expandedTodoId === item._id ? 'expanded' : ''}}">
+            <view class="todo-detail" wx:if="{{item.content}}">
+              <text class="detail-value">{{item.content}}</text>
+            </view>
+            <view class="todo-detail empty" wx:else>
+              <text class="detail-value">暂无详细内容</text>
+            </view>
+          </view>
+        </view>
+      </block>
+    </view>
+  </scroll-view>
+
+  <!-- 放弃确认对话框 -->
+  <van-dialog
+    title="确认放弃"
+    message="确定要放弃这条待办吗？"
+    show="{{showAbandonDialog}}"
+    show-cancel-button
+    bind:confirm="onConfirmAbandon"
+    bind:cancel="onCancelAbandon"
+    confirm-button-text="确定"
+    cancel-button-text="取消"
+    confirm-button-color="#ff4d4f" />
+
+  <!-- 编辑对话框 -->
+  <van-dialog
+    use-slot
+    title="编辑待办"
+    show="{{showEditDialog}}"
+    show-cancel-button
+    bind:confirm="onSaveEdit"
+    bind:cancel="onCancelEdit"
+    confirm-button-text="保存"
+    cancel-button-text="取消"
+    confirm-button-color="#1989fa">
+    <view class="edit-dialog">
+      <view class="dialog-field">
+        <text class="dialog-label">内容</text>
+        <textarea class="dialog-textarea" value="{{editContent}}" bindinput="onEditContentChange" placeholder="请输入内容" />
+      </view>
+      <view class="dialog-field">
+        <view class="importance-options">
+          <view class="importance-option {{editImportance === 1 ? 'active importance-low' : ''}}" bindtap="onImportanceChange" data-value="1">低</view>
+          <view class="importance-option {{editImportance === 2 ? 'active importance-mid' : ''}}" bindtap="onImportanceChange" data-value="2">中</view>
+          <view class="importance-option {{editImportance === 3 ? 'active importance-high' : ''}}" bindtap="onImportanceChange" data-value="3">高</view>
+        </view>
+      </view>
+    </view>
+  </van-dialog>
+</view>

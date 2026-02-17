@@ -1,0 +1,13 @@
+/* 导入公共样式 */
+@import './styles/common.wxss';
+
+page {
+  background-color: #f7f8f9;
+  height: 100%;
+}
+
+/* Vant Dialog 完全居中 */
+.van-dialog {
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+}
