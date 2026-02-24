@@ -56,11 +56,11 @@
 }
 
 .action-btn-edit {
-  background-color: #4caf50;
+  background-color: #1989fa;
 }
 
 .action-btn-delete {
-  background-color: #9e9e9e;
+  background-color: #ff4d4f;
 }
 
 /* ==================== 待办事项样式 ==================== */
@@ -161,7 +161,7 @@
 
 .status-tag-abandoned {
   color: #969799;
-  background-color: #f2f2f2;
+  background-color: #ebedf0;
 }
 
 /* ==================== 日历相关样式 ==================== */
@@ -284,19 +284,24 @@
 
 /* ==================== 对话框样式 ==================== */
 
+.edit-dialog {
+  padding: 16px;
+}
+
 .dialog-field {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
 .dialog-field-row {
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
 }
 
 .dialog-label {
   font-size: 14px;
   color: #323233;
-  margin-right: 12px;
+  min-width: 40px;
 }
 
 .required-star {
@@ -306,19 +311,23 @@
 .dialog-input {
   flex: 1;
   font-size: 14px;
-  padding: 8px;
+  padding: 8px 12px;
   border: 1px solid #ebedf0;
   border-radius: 4px;
+  background-color: #ffffff;
+  min-width: 200px;
 }
 
 .dialog-textarea {
   width: 100%;
   height: 80px;
   font-size: 14px;
-  padding: 8px;
+  padding: 8px 12px;
   border: 1px solid #ebedf0;
   border-radius: 4px;
+  background-color: #ffffff;
   box-sizing: border-box;
+  margin-top: 8px;
 }
 
 .dialog-picker {
@@ -327,35 +336,76 @@
   padding: 8px 12px;
   border: 1px solid #ebedf0;
   border-radius: 4px;
+  background-color: #ffffff;
+  white-space: nowrap;
 }
 
 /* 优先级选项 */
 .importance-options {
   display: flex;
   gap: 12px;
+  margin-top: 8px;
 }
 
 .importance-option {
-  padding: 8px 16px;
-  border: 1px solid #ebedf0;
+  padding: 6px 16px;
   border-radius: 4px;
   font-size: 14px;
-  color: #323233;
+  color: #646566;
+  background-color: #f5f5f5;
+  border: 1px solid #ebedf0;
+  transition: all 0.3s ease;
 }
 
-.importance-option-active {
-  border-color: #1989fa;
-  background-color: #e6f2ff;
+.importance-option.active {
+  color: #ffffff;
+  border-color: transparent;
 }
 
-.importance-option-low {
-  color: #ffb300;
+.importance-option.active.importance-low {
+  background-color: #ffb300;
 }
 
-.importance-option-medium {
-  color: #f57c00;
+.importance-option.active.importance-mid {
+  background-color: #f57c00;
 }
 
-.importance-option-high {
-  color: #d32f2f;
+.importance-option.active.importance-high {
+  background-color: #d32f2f;
+}
+
+/* switch 样式调整 */
+.dialog-field switch {
+  margin-left: 8px;
+}
+
+/* ==================== 列表折叠样式 ==================== */
+
+.todo-collapse-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.todo-wrapper {
+  background-color: transparent;
+}
+
+.todo-wrapper-has-border {
+  border-bottom: 1px solid #ebedf0;
+}
+
+.todo-header {
+  flex: 1;
+}
+
+.todo-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.swipe-right-actions {
+  display: flex;
+  align-items: center;
+  height: 100%;
 }

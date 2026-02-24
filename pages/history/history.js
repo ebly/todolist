@@ -2,14 +2,24 @@ const storage = require('../../utils/storage.js');
 const dateUtil = require('../../utils/dateUtil.js');
 const mixin = require('../../utils/todoMixin.js');
 
+// 对话框默认数据
+const DEFAULT_DIALOG_DATA = {
+  editTitle: '',
+  editContent: '',
+  editImportance: 2,
+  editStartDate: '',
+  editDate: '',
+  editPermanent: false
+};
+
 Page({
   data: {
     currentYear: new Date().getFullYear(),
     currentMonth: new Date().getMonth() + 1,
     calendarWeeks: [],
     dateStats: {},
-    monthTodos: {}, // 存储整个月份的待办数据，按开始日期分组
-    allMonthTodos: [], // 存储当前月份的所有待办（用于日期范围查询）
+    monthTodos: {},
+    allMonthTodos: [],
     selectedDate: '',
     selectedDateTodos: [],
     todayDateKey: '',
@@ -19,69 +29,46 @@ Page({
     showAddDialog: false,
     showDeleteDialog: false,
     deleteTodoId: '',
-    editContent: '',
-    editTitle: '',
-    editImportance: 2,
-    editStartDate: '',  // 开始日期
-    editDate: '',       // 截至日期
-    editPermanent: false
+    ...DEFAULT_DIALOG_DATA
   },
 
   onLoad() {
     const today = dateUtil.getTodayKey();
     this.setData({ todayDateKey: today, selectedDate: today });
-    this.loadMonthData(this.data.currentYear, this.data.currentMonth).then(() => {
-      this.loadTodosForDate(today);
-    });
+    this.refreshData(today);
   },
 
   onShow() {
     const today = dateUtil.getTodayKey();
     this.setData({ todayDateKey: today });
-    // 刷新当前月份数据和选中日期的待办
-    this.loadMonthData(this.data.currentYear, this.data.currentMonth).then(() => {
-      this.loadTodosForDate(this.data.selectedDate);
-    });
+    this.refreshData(this.data.selectedDate);
   },
 
   /**
-   * 加载指定月份的数据（从服务器获取）
+   * 刷新数据（月份 + 选中日期）
+   */
+  async refreshData(dateKey) {
+    await this.loadMonthData(this.data.currentYear, this.data.currentMonth);
+    this.loadTodosForDate(dateKey);
+  },
+
+  /**
+   * 加载指定月份的数据
    */
   async loadMonthData(year, month) {
     wx.showLoading({ title: '加载中' });
     try {
-      // 从服务器获取当前月份的所有待办
+      // 复用 storage.getDateStats 获取统计数据
+      const dateStats = await storage.getDateStats(year, month);
       const todos = await storage.getTodosByMonth(year, month);
       
       // 按开始日期分组
-      const monthTodos = {};
-      const dateStats = {};
-      
-      todos.forEach(todo => {
-        // 使用 startDate 作为分组键
-        const dateKey = todo.startDate;
-        if (!monthTodos[dateKey]) {
-          monthTodos[dateKey] = [];
-        }
-        monthTodos[dateKey].push(todo);
-        
-        // 统计日期数据
-        if (!dateStats[dateKey]) {
-          dateStats[dateKey] = { total: 0, completed: 0, hasIncomplete: false, hasCompleted: false };
-        }
-        dateStats[dateKey].total++;
-        if (todo.completed) {
-          dateStats[dateKey].completed++;
-        }
-      });
-      
-      // 计算 hasIncomplete 和 hasCompleted
-      Object.keys(dateStats).forEach(dateKey => {
-        const stat = dateStats[dateKey];
-        stat.hasCompleted = stat.completed > 0;
-        stat.hasIncomplete = stat.completed < stat.total;
-        console.log('[History] dateStats:', dateKey, 'total:', stat.total, 'completed:', stat.completed, 'hasIncomplete:', stat.hasIncomplete, 'hasCompleted:', stat.hasCompleted);
-      });
+      const monthTodos = todos.reduce((acc, todo) => {
+        const key = todo.startDate;
+        if (!acc[key]) acc[key] = [];
+        acc[key].push(todo);
+        return acc;
+      }, {});
       
       this.setData({ monthTodos, dateStats, allMonthTodos: todos });
       this.renderCalendar();
@@ -97,27 +84,20 @@ Page({
    */
   renderCalendar() {
     const { currentYear, currentMonth, todayDateKey, dateStats } = this.data;
-    const safeDateStats = dateStats || {};
-    
-    const weeks = dateUtil.generateCalendar(currentYear, currentMonth, todayDateKey, safeDateStats);
+    const weeks = dateUtil.generateCalendar(currentYear, currentMonth, todayDateKey, dateStats || {});
     this.setData({ calendarWeeks: weeks });
   },
 
   /**
-   * 加载指定日期的待办（从本地月份数据获取）
+   * 加载指定日期的待办
    */
   loadTodosForDate(dateKey) {
     const { allMonthTodos } = this.data;
     
-    // 筛选出日期范围包含该日期的待办，以及不限日期的待办
-    // 已完成/放弃的待办只在 endDate 当天显示
     const todos = (allMonthTodos || []).filter(todo => {
-      // 如果待办已完成或放弃，只在 endDate 当天显示
       if (todo.completed || todo.abandoned) {
         return todo.endDate === dateKey;
       }
-      
-      // 未完成未放弃的待办正常显示
       if (todo.permanent) {
         return dateKey >= todo.startDate;
       }
@@ -128,7 +108,7 @@ Page({
   },
 
   /**
-   * 选择日期（查看待办）
+   * 选择日期
    */
   onSelectDate(e) {
     const dateKey = e.currentTarget.dataset.datekey;
@@ -140,19 +120,10 @@ Page({
 
   /**
    * 获取目标月份应该选中的日期
-   * @param {number} targetYear 目标年份
-   * @param {number} targetMonth 目标月份
-   * @param {string} currentSelectedDate 当前选中的日期
-   * @returns {string} 目标日期
    */
   getTargetDate(targetYear, targetMonth, currentSelectedDate) {
-    // 从当前选中的日期提取日
     const currentDay = parseInt(currentSelectedDate.split('-')[2]);
-    
-    // 获取目标月份的最大天数
     const lastDayOfMonth = new Date(targetYear, targetMonth, 0).getDate();
-    
-    // 如果当前日大于目标月份的最大天数，则选择最大天数
     const targetDay = Math.min(currentDay, lastDayOfMonth);
     
     const monthStr = String(targetMonth).padStart(2, '0');
@@ -162,51 +133,32 @@ Page({
   },
 
   /**
-   * 上一月
+   * 切换月份
    */
-  onPrevMonth() {
+  changeMonth(delta) {
     let { currentYear, currentMonth, selectedDate } = this.data;
-    currentMonth--;
+    currentMonth += delta;
+    
     if (currentMonth < 1) {
       currentMonth = 12;
       currentYear--;
-    }
-    
-    // 计算目标日期
-    const targetDate = this.getTargetDate(currentYear, currentMonth, selectedDate);
-    
-    this.setData({ 
-      currentYear, 
-      currentMonth, 
-      selectedDate: targetDate 
-    });
-    this.loadMonthData(currentYear, currentMonth).then(() => {
-      this.loadTodosForDate(targetDate);
-    });
-  },
-
-  /**
-   * 下一月
-   */
-  onNextMonth() {
-    let { currentYear, currentMonth, selectedDate } = this.data;
-    currentMonth++;
-    if (currentMonth > 12) {
+    } else if (currentMonth > 12) {
       currentMonth = 1;
       currentYear++;
     }
     
-    // 计算目标日期
     const targetDate = this.getTargetDate(currentYear, currentMonth, selectedDate);
     
-    this.setData({ 
-      currentYear, 
-      currentMonth, 
-      selectedDate: targetDate 
-    });
-    this.loadMonthData(currentYear, currentMonth).then(() => {
-      this.loadTodosForDate(targetDate);
-    });
+    this.setData({ currentYear, currentMonth, selectedDate: targetDate });
+    this.refreshData(targetDate);
+  },
+
+  onPrevMonth() {
+    this.changeMonth(-1);
+  },
+
+  onNextMonth() {
+    this.changeMonth(1);
   },
 
   /**
@@ -217,26 +169,18 @@ Page({
   },
 
   /**
-   * 删除待办 - 显示确认对话框
+   * 删除待办
    */
   onDeleteTodo(e) {
     const id = mixin.extractId(e, 'onDeleteTodo');
     if (!id) return;
-    
     e.stopPropagation && e.stopPropagation();
     
-    this.setData({
-      showDeleteDialog: true,
-      deleteTodoId: id
-    });
+    this.setData({ showDeleteDialog: true, deleteTodoId: id });
   },
 
-  /**
-   * 确认删除
-   */
   async onConfirmDelete() {
     const { deleteTodoId, selectedDate } = this.data;
-    
     this.setData({ showDeleteDialog: false });
     
     if (!deleteTodoId) {
@@ -247,13 +191,9 @@ Page({
     wx.showLoading({ title: '删除中' });
     try {
       const result = await storage.deleteTodo(deleteTodoId);
-      
       if (result) {
         mixin.showSuccess('已删除');
-        // 刷新当前月份数据
-        this.loadMonthData(this.data.currentYear, this.data.currentMonth).then(() => {
-          this.loadTodosForDate(selectedDate);
-        });
+        this.refreshData(selectedDate);
       } else {
         mixin.showError('删除失败');
       }
@@ -263,14 +203,8 @@ Page({
     }
   },
 
-  /**
-   * 取消删除
-   */
   onCancelDelete() {
-    this.setData({
-      showDeleteDialog: false,
-      deleteTodoId: ''
-    });
+    this.setData({ showDeleteDialog: false, deleteTodoId: '' });
   },
 
   /**
@@ -279,109 +213,71 @@ Page({
   onEditTodo(e) {
     const id = mixin.extractId(e, 'onEditTodo');
     if (!id) return;
-    
     e.stopPropagation && e.stopPropagation();
     
     const { selectedDateTodos, selectedDate } = this.data;
     const todo = selectedDateTodos.find(t => t._id === id);
     
-    if (todo) {
-      this.setData({
-        editingTodo: todo,
-        showEditDialog: true,
-        showAddDialog: false,
-        editContent: todo.content || '',
-        editTitle: todo.title || '',
-        editImportance: todo.importance || 2,
-        editStartDate: todo.startDate || selectedDate,
-        editDate: selectedDate,  // 编辑时截至日期默认为当前选中的日期
-        editPermanent: todo.permanent || false
-      });
-    } else {
+    if (!todo) {
       mixin.showError('未找到待办事项');
+      return;
     }
+    
+    this.setData({
+      editingTodo: todo,
+      showEditDialog: true,
+      showAddDialog: false,
+      editContent: todo.content || '',
+      editTitle: todo.title || '',
+      editImportance: todo.importance || 2,
+      editStartDate: todo.startDate || selectedDate,
+      editDate: selectedDate,
+      editPermanent: todo.permanent || false
+    });
   },
 
   /**
-   * 显示新增对话框（用于当前选中日期）
+   * 显示新增对话框
    */
   onShowAddDialog() {
     const { selectedDate, todayDateKey, monthTodos } = this.data;
     
-    // 检查是否过期
     if (selectedDate < todayDateKey) {
-      wx.showToast({
-        title: '该日期已过期，无法添加待办',
-        icon: 'none',
-        duration: 2000
-      });
+      wx.showToast({ title: '该日期已过期，无法添加待办', icon: 'none', duration: 2000 });
       return;
     }
     
-    // 检查当天待办数量是否超过10个
     const dayTodos = monthTodos[selectedDate] || [];
     if (dayTodos.length >= 10) {
-      wx.showToast({
-        title: '该日期待办已满（最多10个）',
-        icon: 'none',
-        duration: 2000
-      });
+      wx.showToast({ title: '该日期待办已满（最多10个）', icon: 'none', duration: 2000 });
       return;
     }
     
     this.setData({
       showAddDialog: true,
       showEditDialog: false,
-      editTitle: '',
-      editContent: '',
-      editImportance: 2,
+      ...DEFAULT_DIALOG_DATA,
       editStartDate: selectedDate,
-      editDate: selectedDate,
-      editPermanent: false
+      editDate: selectedDate
     });
   },
 
   /**
-   * 显示新增对话框（用于今天）
+   * 关闭对话框
    */
-  onShowAddDialogForToday() {
-    console.log('[History] onShowAddDialogForToday clicked');
-    const today = dateUtil.getTodayKey();
-    console.log('[History] today:', today);
-    this.setData({
-      selectedDate: today,
-      showAddDialog: true,
-      showEditDialog: false,
-      editTitle: '',
-      editContent: '',
-      editImportance: 2,
-      editStartDate: today,
-      editDate: today,
-      editPermanent: false
-    }, () => {
-      console.log('[History] showAddDialog set to:', this.data.showAddDialog);
-    });
-  },
-
-  /**
-   * 取消编辑
-   */
-  onCancelEdit() {
+  closeDialog() {
     this.setData({
       editingTodo: null,
       showEditDialog: false,
       showAddDialog: false,
-      editContent: '',
-      editTitle: '',
-      editImportance: 2,
-      editDate: '',
-      editPermanent: false
+      ...DEFAULT_DIALOG_DATA
     });
   },
 
-  /**
-   * 阻止事件冒泡
-   */
+  onCancelEdit() {
+    this.closeDialog();
+  },
+
   onStopPropagation() {},
 
   // 表单输入处理
@@ -401,30 +297,15 @@ Page({
     this.setData({ editDate: e.detail.value });
   },
 
-  onStartDateChange(e) {
-    const newStartDate = e.detail.value;
-    const { editDate } = this.data;
-    
-    // 如果修改了开始日期，截至日期也要同步更新（保持与开始日期相同或更晚）
-    // 如果当前截至日期早于新的开始日期，则更新截至日期为开始日期
-    const newEndDate = editDate && editDate < newStartDate ? newStartDate : editDate;
-    
-    this.setData({ 
-      editStartDate: newStartDate,
-      editDate: newEndDate
-    });
-  },
-
   onPermanentChange(e) {
     this.setData({ editPermanent: e.detail.value });
   },
 
   /**
-   * 保存编辑/新增 - 直接操作后台
+   * 保存编辑/新增
    */
   async onSaveEdit() {
     const { editingTodo, editContent, selectedDate, showAddDialog, editTitle, editImportance, editDate, editStartDate, editPermanent } = this.data;
-    const newContent = editContent ? editContent.trim() : '';
     const newTitle = editTitle ? editTitle.trim() : '';
     
     if (!newTitle) {
@@ -435,106 +316,43 @@ Page({
     wx.showLoading({ title: '保存中' });
 
     try {
-      // 新增待办
+      const startDate = editStartDate || selectedDate;
+      const endDate = editPermanent ? startDate : (editDate || startDate);
+      const todoData = {
+        title: newTitle,
+        content: editContent ? editContent.trim() : '',
+        importance: editImportance,
+        permanent: editPermanent
+      };
+
+      let result;
+      
       if (showAddDialog) {
-        const startDate = editStartDate || selectedDate;
-        const endDate = editPermanent ? startDate : (editDate || startDate);
-        const todoData = {
-          title: newTitle,
-          content: newContent,
-          importance: editImportance,
-          permanent: editPermanent
-        };
-        const result = await storage.addTodo(todoData, startDate, endDate);
-        
-        if (result) {
-          this.setData({
-            showAddDialog: false,
-            editTitle: '',
-            editContent: '',
-            editImportance: 2,
-            editStartDate: '',
-            editDate: '',
-            editPermanent: false
-          });
-          // 刷新当前月份数据（会包含新添加的待办）
-          this.loadMonthData(this.data.currentYear, this.data.currentMonth).then(() => {
-            this.loadTodosForDate(selectedDate);
-          });
-          mixin.showSuccess('添加成功');
+        // 新增
+        result = await storage.addTodo(todoData, startDate, endDate);
+        if (result) mixin.showSuccess('添加成功');
+      } else if (editingTodo) {
+        // 编辑
+        if (editingTodo.permanent && !editPermanent) {
+          // 不限 -> 有限：删除原记录，创建新记录
+          await storage.deleteTodo(editingTodo._id);
+          result = await storage.addTodo(todoData, startDate, endDate);
         } else {
-          mixin.showError('添加失败');
+          // 普通更新
+          result = await storage.updateTodo(editingTodo._id, {
+            ...todoData,
+            startDate,
+            endDate
+          });
         }
+        if (result) mixin.showSuccess('修改成功');
       }
 
-      // 编辑待办
-      if (editingTodo) {
-        // 编辑时开始日期使用当前选中的日期
-        const startDate = selectedDate;
-        const endDate = editPermanent ? startDate : (editDate || startDate);
-        
-        // 如果原是不限日期，现在改为有日期，需要删除原记录并创建日期范围
-        if (editingTodo.permanent && !editPermanent) {
-          // 删除原不限日期记录
-          await storage.deleteTodo(editingTodo._id);
-          // 创建日期范围的新待办
-          const todoData = {
-            title: newTitle,
-            content: newContent,
-            importance: editImportance,
-            permanent: false
-          };
-          const result = await storage.addTodo(todoData, startDate, endDate);
-          
-          if (result) {
-            this.setData({
-              editingTodo: null,
-              showEditDialog: false,
-              editContent: '',
-              editTitle: '',
-              editImportance: 2,
-              editStartDate: '',
-              editDate: '',
-              editPermanent: false
-            });
-            this.loadMonthData(this.data.currentYear, this.data.currentMonth).then(() => {
-              this.loadTodosForDate(selectedDate);
-            });
-            mixin.showSuccess('修改成功');
-          } else {
-            mixin.showError('修改失败');
-          }
-        } else {
-          // 普通更新（使用 startDate 和 endDate）
-          const updateData = {
-            content: newContent,
-            title: newTitle,
-            importance: editImportance,
-            permanent: editPermanent,
-            startDate: startDate,
-            endDate: endDate
-          };
-          const result = await storage.updateTodo(editingTodo._id, updateData);
-          
-          if (result) {
-            this.setData({
-              editingTodo: null,
-              showEditDialog: false,
-              editContent: '',
-              editTitle: '',
-              editImportance: 2,
-              editStartDate: '',
-              editDate: '',
-              editPermanent: false
-            });
-            this.loadMonthData(this.data.currentYear, this.data.currentMonth).then(() => {
-              this.loadTodosForDate(selectedDate);
-            });
-            mixin.showSuccess('修改成功');
-          } else {
-            mixin.showError('修改失败');
-          }
-        }
+      if (result) {
+        this.closeDialog();
+        this.refreshData(selectedDate);
+      } else {
+        mixin.showError(showAddDialog ? '添加失败' : '修改失败');
       }
     } finally {
       wx.hideLoading();
@@ -559,10 +377,7 @@ Page({
 
       if (result) {
         mixin.showSuccess('已清除所有数据');
-        // 刷新页面数据
-        this.loadMonthData(this.data.currentYear, this.data.currentMonth).then(() => {
-          this.loadTodosForDate(this.data.selectedDate);
-        });
+        this.refreshData(this.data.selectedDate);
       } else {
         mixin.showError('清除失败');
       }

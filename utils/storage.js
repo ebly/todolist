@@ -9,7 +9,7 @@ const getDB = () => {
 };
 
 /**
- * 添加待办 - 直接操作后台（使用 startDate 和 endDate）
+ * 添加待办
  * @param {Object} todoData 待办数据
  * @param {string} startDate 开始日期Key
  * @param {string} endDate 结束日期Key
@@ -38,9 +38,7 @@ const addTodo = async (todoData, startDate, endDate) => {
 
   try {
     const db = getDB();
-    const result = await db.collection('todos').add({
-      data: newTodo
-    });
+    const result = await db.collection('todos').add({ data: newTodo });
     return { ...newTodo, _id: result._id };
   } catch (e) {
     console.error('[Storage] addTodo error:', e);
@@ -49,7 +47,7 @@ const addTodo = async (todoData, startDate, endDate) => {
 };
 
 /**
- * 获取指定日期的待办（包含日期范围内的待办和不限日期的待办）
+ * 获取指定日期的待办（合并为单次查询）
  * @param {string} dateKey 日期Key
  * @returns {Promise<Array>} 待办列表
  */
@@ -57,30 +55,26 @@ const getTodosByDate = async (dateKey) => {
   try {
     const db = getDB();
     
-    // 查询不限日期的待办（从今天开始出现）
-    // 条件：permanent=true 且 startDate <= dateKey
-    // 已完成/放弃的待办只在 endDate 当天显示
-    const permanentRes = await db.collection('todos').where({
-      permanent: true,
-      startDate: db.command.lte(dateKey)
-    }).get();
+    // 使用 or 条件合并查询，减少请求次数
+    const res = await db.collection('todos').where(
+      db.command.or([
+        // 不限日期的待办
+        {
+          permanent: true,
+          startDate: db.command.lte(dateKey)
+        },
+        // 日期范围内的待办
+        {
+          permanent: false,
+          startDate: db.command.lte(dateKey),
+          endDate: db.command.gte(dateKey)
+        }
+      ])
+    ).get();
     
-    // 查询日期范围内的待办（普通待办）
-    // 条件：startDate <= dateKey <= endDate
-    const rangeRes = await db.collection('todos').where({
-      permanent: false,
-      startDate: db.command.lte(dateKey),
-      endDate: db.command.gte(dateKey)
-    }).get();
-    
-    // 合并结果并过滤：已完成或放弃的待办，只在 endDate 当天显示
-    const allTodos = [...(permanentRes.data || []), ...(rangeRes.data || [])];
-    return allTodos.filter(todo => {
-      // 如果待办未完成且未放弃，正常显示
-      if (!todo.completed && !todo.abandoned) {
-        return true;
-      }
-      // 如果已完成或放弃，只在 endDate 当天显示
+    // 过滤：已完成或放弃的待办，只在 endDate 当天显示
+    return (res.data || []).filter(todo => {
+      if (!todo.completed && !todo.abandoned) return true;
       return todo.endDate === dateKey;
     });
   } catch (e) {
@@ -94,12 +88,11 @@ const getTodosByDate = async (dateKey) => {
  * @returns {Promise<Array>} 待办列表
  */
 const getTodayTodos = async () => {
-  const todayKey = dateUtil.getTodayKey();
-  return getTodosByDate(todayKey);
+  return getTodosByDate(dateUtil.getTodayKey());
 };
 
 /**
- * 获取指定月份的待办（包含日期范围与月份有交集的待办和不限日期的待办）
+ * 获取指定月份的待办（合并为单次查询）
  * @param {number} year 年份
  * @param {number} month 月份
  * @returns {Promise<Array>} 待办列表
@@ -109,25 +102,26 @@ const getTodosByMonth = async (year, month) => {
     const monthStr = String(month).padStart(2, '0');
     const monthStart = `${year}-${monthStr}-01`;
     const monthEnd = `${year}-${monthStr}-31`;
-
     const db = getDB();
     
-    // 查询不限日期的待办（startDate <= monthEnd，即从该月开始或之前开始的）
-    const permanentRes = await db.collection('todos').where({
-      permanent: true,
-      startDate: db.command.lte(monthEnd)
-    }).get();
+    // 使用 or 条件合并查询
+    const res = await db.collection('todos').where(
+      db.command.or([
+        // 不限日期的待办
+        {
+          permanent: true,
+          startDate: db.command.lte(monthEnd)
+        },
+        // 日期范围与月份有交集的待办
+        {
+          permanent: false,
+          startDate: db.command.lte(monthEnd),
+          endDate: db.command.gte(monthStart)
+        }
+      ])
+    ).get();
     
-    // 查询日期范围与月份有交集的待办
-    // 条件：startDate <= monthEnd 且 endDate >= monthStart
-    const rangeRes = await db.collection('todos').where({
-      permanent: false,
-      startDate: db.command.lte(monthEnd),
-      endDate: db.command.gte(monthStart)
-    }).get();
-    
-    // 合并结果
-    return [...(permanentRes.data || []), ...(rangeRes.data || [])];
+    return res.data || [];
   } catch (e) {
     console.error('[Storage] getTodosByMonth error:', e);
     return [];
@@ -135,7 +129,7 @@ const getTodosByMonth = async (year, month) => {
 };
 
 /**
- * 切换待办完成状态 - 直接操作后台
+ * 切换待办完成状态
  * @param {string} id 待办ID
  * @returns {Promise<boolean|null>} 新的完成状态
  */
@@ -146,20 +140,15 @@ const toggleTodo = async (id) => {
     if (!todo.data) return null;
 
     const newCompleted = !todo.data.completed;
-    const updateData = {
-      completed: newCompleted,
-      abandoned: false
-    };
+    const updateData = { completed: newCompleted, abandoned: false };
     
-    // 如果标记为完成，将截止日期改为今天，并将不限日期改为有限
+    // 如果标记为完成，更新截止日期
     if (newCompleted) {
       updateData.endDate = dateUtil.getTodayKey();
       updateData.permanent = false;
     }
     
-    await db.collection('todos').doc(id).update({
-      data: updateData
-    });
+    await db.collection('todos').doc(id).update({ data: updateData });
     return newCompleted;
   } catch (e) {
     console.error('[Storage] toggleTodo error:', e);
@@ -168,14 +157,13 @@ const toggleTodo = async (id) => {
 };
 
 /**
- * 删除待办 - 直接操作后台（删除单条记录）
+ * 删除待办
  * @param {string} id 待办ID
  * @returns {Promise<boolean>} 是否成功
  */
 const deleteTodo = async (id) => {
   try {
-    const db = getDB();
-    await db.collection('todos').doc(id).remove();
+    await getDB().collection('todos').doc(id).remove();
     return true;
   } catch (e) {
     console.error('[Storage] deleteTodo error:', e);
@@ -184,20 +172,17 @@ const deleteTodo = async (id) => {
 };
 
 /**
- * 放弃待办 - 将待办标记为放弃状态
+ * 放弃待办
  * @param {string} id 待办ID
  * @returns {Promise<boolean>} 是否成功
  */
 const abandonTodo = async (id) => {
   try {
-    const db = getDB();
-    const todayKey = dateUtil.getTodayKey();
-    
-    await db.collection('todos').doc(id).update({
+    await getDB().collection('todos').doc(id).update({
       data: {
         abandoned: true,
         completed: false,
-        endDate: todayKey,
+        endDate: dateUtil.getTodayKey(),
         permanent: false
       }
     });
@@ -209,21 +194,20 @@ const abandonTodo = async (id) => {
 };
 
 /**
- * 清除所有待办数据 - 直接操作后台
+ * 清除所有待办数据
  * @returns {Promise<boolean>} 是否成功
  */
 const clearAllTodos = async () => {
   try {
     const db = getDB();
-    const res = await db.collection('todos').get();
-    const todos = res.data || [];
+    const { data } = await db.collection('todos').limit(100).get();
     
-    // 批量删除所有待办
-    for (const todo of todos) {
-      await db.collection('todos').doc(todo._id).remove();
-    }
+    // 批量删除
+    await Promise.all(data.map(todo => 
+      db.collection('todos').doc(todo._id).remove()
+    ));
     
-    console.log('[Storage] clearAllTodos: deleted', todos.length, 'todos');
+    console.log('[Storage] clearAllTodos: deleted', data.length, 'todos');
     return true;
   } catch (e) {
     console.error('[Storage] clearAllTodos error:', e);
@@ -232,17 +216,14 @@ const clearAllTodos = async () => {
 };
 
 /**
- * 更新待办 - 直接操作后台
+ * 更新待办
  * @param {string} id 待办ID
  * @param {Object} updateData 更新数据
  * @returns {Promise<boolean>} 是否成功
  */
 const updateTodo = async (id, updateData) => {
   try {
-    const db = getDB();
-    await db.collection('todos').doc(id).update({
-      data: updateData
-    });
+    await getDB().collection('todos').doc(id).update({ data: updateData });
     return true;
   } catch (e) {
     console.error('[Storage] updateTodo error:', e);
@@ -251,78 +232,40 @@ const updateTodo = async (id, updateData) => {
 };
 
 /**
- * 获取日期统计 - 直接操作后台
- * @returns {Promise<Object>} 日期统计
- */
-const getDateStats = async () => {
-  try {
-    const db = getDB();
-    const res = await db.collection('todos').get();
-    const todos = res.data || [];
-
-    const stats = {};
-    todos.forEach(todo => {
-      if (todo.permanent) {
-        // 不限日期的待办，不统计到具体日期
-        return;
-      }
-      
-      // 对于日期范围的待办，统计到 startDate
-      const key = todo.startDate;
-      if (!stats[key]) {
-        stats[key] = { hasIncomplete: false, hasCompleted: false };
-      }
-      if (todo.completed) {
-        stats[key].hasCompleted = true;
-      } else {
-        stats[key].hasIncomplete = true;
-      }
-    });
-    return stats;
-  } catch (e) {
-    console.error('[Storage] getDateStats error:', e);
-    return {};
-  }
-};
-
-/**
- * 获取指定月份的日期统计
+ * 获取日期统计（优化：复用 getTodosByMonth）
  * @param {number} year 年份
  * @param {number} month 月份
  * @returns {Promise<Object>} 日期统计
  */
-const getDateStatsByMonth = async (year, month) => {
+const getDateStats = async (year, month) => {
   try {
-    const monthStr = String(month).padStart(2, '0');
-    const monthStart = `${year}-${monthStr}-01`;
-    const monthEnd = `${year}-${monthStr}-31`;
-
-    const db = getDB();
-    
-    // 获取该月份相关的所有待办
-    const res = await db.collection('todos').where({
-      permanent: false,
-      startDate: db.command.lte(monthEnd),
-      endDate: db.command.gte(monthStart)
-    }).get();
-    
-    const todos = res.data || [];
-
+    const todos = await getTodosByMonth(year, month);
     const stats = {};
+    
     todos.forEach(todo => {
+      if (todo.permanent) return;
+      
       const key = todo.startDate;
       if (!stats[key]) {
-        stats[key] = { hasIncomplete: false, hasCompleted: false };
+        stats[key] = { total: 0, completed: 0, hasIncomplete: false, hasCompleted: false };
       }
+      stats[key].total++;
       if (todo.completed) {
+        stats[key].completed++;
         stats[key].hasCompleted = true;
-      } else {
+      } else if (!todo.abandoned) {
         stats[key].hasIncomplete = true;
       }
     });
+    
+    // 计算 hasIncomplete（有未完成）
+    Object.values(stats).forEach(stat => {
+      stat.hasIncomplete = stat.completed < stat.total;
+    });
+    
     return stats;
   } catch (e) {
-    console.error('[Storage] getDateStatsByMonth error:', e);
+    console.error('[Storage] getDateStats error:', e);
     return {};
   }
 };
@@ -337,6 +280,5 @@ module.exports = {
   abandonTodo,
   clearAllTodos,
   updateTodo,
-  getDateStats,
-  getDateStatsByMonth
+  getDateStats
 };

@@ -9,6 +9,7 @@
     "navigationBarTitleText": "划掉",
     "navigationBarTextStyle": "black"
   },
+  "lazyCodeLoading": "requiredComponents",
   "tabBar": {
     "color": "#969799",
     "selectedColor": "#1989fa",

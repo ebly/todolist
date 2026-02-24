@@ -193,3 +193,249 @@
   color: #969799;
   padding: 40px 0;
 }
+
+/* ==================== 待办列表样式 ==================== */
+
+.todo-collapse-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.todo-wrapper {
+  background-color: transparent;
+}
+
+.todo-wrapper.has-border {
+  border-bottom: 1px solid #ebedf0;
+}
+
+.todo-header {
+  flex: 1;
+}
+
+.todo-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.expand-arrow {
+  font-size: 12px;
+  color: #969799;
+  transition: transform 0.3s ease;
+  margin-left: 8px;
+  text-decoration: none !important;
+}
+
+.expand-arrow.expanded {
+  transform: rotate(180deg);
+}
+
+.todo-collapse-content {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
+  background-color: #f7f8f9;
+  padding: 0 16px;
+}
+
+.todo-collapse-content.expanded {
+  max-height: 500px;
+  padding: 12px 16px;
+  opacity: 1;
+}
+
+.todo-detail {
+  font-size: 14px;
+  color: #323233;
+  line-height: 1.5;
+}
+
+.todo-detail.empty {
+  color: #969799;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  background-color: transparent;
+  height: 48px;
+  padding: 0 12px;
+}
+
+.importance-bar {
+  width: 4px;
+  height: 24px;
+  border-radius: 2px;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.importance-bar.importance-1 {
+  background-color: #ffb300;
+}
+
+.importance-bar.importance-2 {
+  background-color: #f57c00;
+}
+
+.importance-bar.importance-3 {
+  background-color: #d32f2f;
+}
+
+.todo-title {
+  color: #323233;
+}
+
+.todo-title-completed {
+  color: #07c160;
+  text-decoration: line-through;
+}
+
+/* 放弃的待办样式 */
+.todo-title-abandoned {
+  color: #969799;
+  text-decoration: line-through;
+}
+
+/* 状态标签 */
+.todo-status {
+  font-size: 12px;
+  color: #07c160;
+  margin-left: 8px;
+  padding: 2px 6px;
+  background-color: #e6f7ed;
+  border-radius: 4px;
+}
+
+.todo-status.abandoned {
+  color: #969799;
+  background-color: #ebedf0;
+}
+
+.swipe-right-actions {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.action-btn {
+  width: 60px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.swipe-right-actions .action-btn.edit {
+  background-color: #1989fa;
+}
+
+.swipe-right-actions .action-btn.delete {
+  background-color: #ff4d4f;
+}
+
+/* ==================== 对话框样式 ==================== */
+
+.edit-dialog {
+  padding: 16px;
+}
+
+.dialog-field {
+  margin-bottom: 16px;
+}
+
+.dialog-field-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.dialog-label {
+  font-size: 14px;
+  color: #323233;
+  min-width: 40px;
+}
+
+.dialog-label + .dialog-label {
+  margin-left: 10px;
+  margin-right: 0;
+}
+
+.required-star {
+  color: #ff4d4f;
+}
+
+.dialog-input {
+  flex: 1;
+  font-size: 14px;
+  padding: 8px 12px;
+  border: 1px solid #ebedf0;
+  border-radius: 4px;
+  background-color: #ffffff;
+  min-width: 200px;
+}
+
+.dialog-textarea {
+  width: 100%;
+  height: 80px;
+  font-size: 14px;
+  padding: 8px 12px;
+  border: 1px solid #ebedf0;
+  border-radius: 4px;
+  background-color: #ffffff;
+  box-sizing: border-box;
+  margin-top: 8px;
+}
+
+.dialog-picker {
+  font-size: 14px;
+  color: #323233;
+  padding: 8px 12px;
+  border: 1px solid #ebedf0;
+  border-radius: 4px;
+  background-color: #ffffff;
+  white-space: nowrap;
+}
+
+/* 优先级选项 */
+.importance-options {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.importance-option {
+  padding: 6px 16px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #646566;
+  background-color: #f5f5f5;
+  border: 1px solid #ebedf0;
+  transition: all 0.3s ease;
+}
+
+.importance-option.active {
+  color: #ffffff;
+  border-color: transparent;
+}
+
+.importance-option.active.importance-low {
+  background-color: #ffb300;
+}
+
+.importance-option.active.importance-mid {
+  background-color: #f57c00;
+}
+
+.importance-option.active.importance-high {
+  background-color: #d32f2f;
+}
+
+/* switch 样式调整 */
+.dialog-field switch {
+  margin-left: 8px;
+}

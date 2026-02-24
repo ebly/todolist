@@ -1,31 +1,31 @@
-<view class="container">
-  <scroll-view class="todo-list" scroll-y enable-flex>
+<view class="page-container">
+  <scroll-view class="list-container" scroll-y enable-flex>
     <view wx:if="{{todos.length === 0}}" class="empty-tip">暂无待办事项</view>
 
     <view class="todo-collapse-list">
       <block wx:for="{{todos}}" wx:for-index="index" wx:key="_id">
-        <view class="todo-wrapper {{index !== todos.length - 1 ? 'has-border' : ''}}">
+        <view class="todo-wrapper {{index !== todos.length - 1 ? 'todo-wrapper-has-border' : ''}}">
           <van-swipe-cell right-width="{{item.completed || item.abandoned ? (0) : (120)}}" disabled="{{item.completed || item.abandoned}}" data-id="{{item._id}}">
-            <view class="todo-item {{item.completed ? 'completed' : ''}} {{item.abandoned ? 'abandoned' : ''}}" bindtap="onToggleExpand" data-id="{{item._id}}">
-              <view class="importance-bar importance-{{item.importance ? item.importance : 2}}"></view>
+            <view class="todo-item-base" bindtap="onToggleExpand" data-id="{{item._id}}">
+              <view class="importance-bar importance-bar-{{item.importance === 1 ? 'low' : item.importance === 3 ? 'high' : 'medium'}}"></view>
               <view class="todo-header">
                 <view class="todo-title-row">
-                  <text class="todo-title">{{item.title}}</text>
-                  <view class="expand-arrow {{expandedTodoId === item._id ? 'expanded' : ''}}">▼</view>
+                  <text class="todo-title {{item.completed ? 'todo-title-completed' : ''}} {{item.abandoned ? 'todo-title-abandoned' : ''}}">{{item.title}}</text>
+                  <view class="expand-arrow {{expandedTodoId === item._id ? 'expand-arrow-expanded' : ''}}">▼</view>
                 </view>
               </view>
             </view>
             <view slot="right" class="swipe-right-actions" data-id="{{item._id}}">
-              <view class="action-btn edit" catchtap="onToggleTodo" data-id="{{item._id}}">完成</view>
-              <view class="action-btn delete" catchtap="onAbandonTodo" data-id="{{item._id}}">放弃</view>
+              <view class="action-btn action-btn-edit" catchtap="onToggleTodo" data-id="{{item._id}}">完成</view>
+              <view class="action-btn action-btn-delete" catchtap="onAbandonTodo" data-id="{{item._id}}">放弃</view>
             </view>
           </van-swipe-cell>
-          <view class="todo-collapse-content {{expandedTodoId === item._id ? 'expanded' : ''}}">
-            <view class="todo-detail" wx:if="{{item.content}}">
-              <text class="detail-value">{{item.content}}</text>
+          <view class="collapse-content {{expandedTodoId === item._id ? 'collapse-content-expanded' : ''}}">
+            <view class="detail-text" wx:if="{{item.content}}">
+              <text>{{item.content}}</text>
             </view>
-            <view class="todo-detail empty" wx:else>
-              <text class="detail-value">暂无详细内容</text>
+            <view class="detail-text detail-text-empty" wx:else>
+              <text>暂无详细内容</text>
             </view>
           </view>
         </view>
