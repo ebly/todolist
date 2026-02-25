@@ -1,0 +1,4 @@
+<view class="toast-feedback {{show ? 'show' : ''}} {{type}}">
+  <view class="toast-icon">{{icon}}</view>
+  <text class="toast-message">{{message}}</text>
+</view>

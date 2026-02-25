@@ -25,9 +25,19 @@
 .calendar-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   height: 48px;
   padding: 0 4px;
+  position: relative;
+}
+
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .month-nav-btn {
@@ -56,6 +66,7 @@
   font-size: 16px;
   font-weight: 600;
   color: #323233;
+  white-space: nowrap;
 }
 
 .calendar-body {

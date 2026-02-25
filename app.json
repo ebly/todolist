@@ -1,7 +1,8 @@
 {
   "pages": [
     "pages/index/index",
-    "pages/history/history"
+    "pages/history/history",
+    "pages/profile/profile"
   ],
   "window": {
     "backgroundTextStyle": "light",
@@ -27,6 +28,12 @@
         "text": "历史记录",
         "iconPath": "assets/tab/calendar.png",
         "selectedIconPath": "assets/tab/calendar-active.png"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的",
+        "iconPath": "assets/tab/profile.png",
+        "selectedIconPath": "assets/tab/profile-active.png"
       }
     ]
   },

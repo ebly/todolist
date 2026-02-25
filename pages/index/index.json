@@ -1,5 +1,6 @@
 {
   "navigationBarTitleText": "今日待办",
+  "enablePullDownRefresh": false,
   "usingComponents": {
     "van-swipe-cell": "miniprogram_npm/@vant/weapp/swipe-cell/index",
     "van-dialog": "miniprogram_npm/@vant/weapp/dialog/index"

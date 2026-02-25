@@ -1,6 +1,5 @@
 const dateUtil = require('./dateUtil.js');
 
-// 延迟获取数据库实例，确保云开发已初始化
 const getDB = () => {
   if (!wx.cloud) {
     throw new Error('云开发未启用');
@@ -8,13 +7,6 @@ const getDB = () => {
   return wx.cloud.database();
 };
 
-/**
- * 添加待办
- * @param {Object} todoData 待办数据
- * @param {string} startDate 开始日期Key
- * @param {string} endDate 结束日期Key
- * @returns {Promise<Object|null>} 添加的待办
- */
 const addTodo = async (todoData, startDate, endDate) => {
   const startKey = startDate || dateUtil.getTodayKey();
   const endKey = endDate || startKey;
@@ -31,6 +23,7 @@ const addTodo = async (todoData, startDate, endDate) => {
     importance: typeof todoData === 'object' ? (todoData.importance || 2) : 2,
     permanent: typeof todoData === 'object' ? (todoData.permanent || false) : false,
     completed: false,
+    abandoned: false,
     startDate: startKey,
     endDate: endKey,
     createdAt: new Date()
@@ -46,24 +39,16 @@ const addTodo = async (todoData, startDate, endDate) => {
   }
 };
 
-/**
- * 获取指定日期的待办（合并为单次查询）
- * @param {string} dateKey 日期Key
- * @returns {Promise<Array>} 待办列表
- */
 const getTodosByDate = async (dateKey) => {
   try {
     const db = getDB();
     
-    // 使用 or 条件合并查询，减少请求次数
     const res = await db.collection('todos').where(
       db.command.or([
-        // 不限日期的待办
         {
           permanent: true,
           startDate: db.command.lte(dateKey)
         },
-        // 日期范围内的待办
         {
           permanent: false,
           startDate: db.command.lte(dateKey),
@@ -72,7 +57,6 @@ const getTodosByDate = async (dateKey) => {
       ])
     ).get();
     
-    // 过滤：已完成或放弃的待办，只在 endDate 当天显示
     return (res.data || []).filter(todo => {
       if (!todo.completed && !todo.abandoned) return true;
       return todo.endDate === dateKey;
@@ -83,20 +67,10 @@ const getTodosByDate = async (dateKey) => {
   }
 };
 
-/**
- * 获取今日待办
- * @returns {Promise<Array>} 待办列表
- */
 const getTodayTodos = async () => {
   return getTodosByDate(dateUtil.getTodayKey());
 };
 
-/**
- * 获取指定月份的待办（合并为单次查询）
- * @param {number} year 年份
- * @param {number} month 月份
- * @returns {Promise<Array>} 待办列表
- */
 const getTodosByMonth = async (year, month) => {
   try {
     const monthStr = String(month).padStart(2, '0');
@@ -104,15 +78,12 @@ const getTodosByMonth = async (year, month) => {
     const monthEnd = `${year}-${monthStr}-31`;
     const db = getDB();
     
-    // 使用 or 条件合并查询
     const res = await db.collection('todos').where(
       db.command.or([
-        // 不限日期的待办
         {
           permanent: true,
           startDate: db.command.lte(monthEnd)
         },
-        // 日期范围与月份有交集的待办
         {
           permanent: false,
           startDate: db.command.lte(monthEnd),
@@ -128,11 +99,6 @@ const getTodosByMonth = async (year, month) => {
   }
 };
 
-/**
- * 切换待办完成状态
- * @param {string} id 待办ID
- * @returns {Promise<boolean|null>} 新的完成状态
- */
 const toggleTodo = async (id) => {
   try {
     const db = getDB();
@@ -142,7 +108,6 @@ const toggleTodo = async (id) => {
     const newCompleted = !todo.data.completed;
     const updateData = { completed: newCompleted, abandoned: false };
     
-    // 如果标记为完成，更新截止日期
     if (newCompleted) {
       updateData.endDate = dateUtil.getTodayKey();
       updateData.permanent = false;
@@ -156,11 +121,6 @@ const toggleTodo = async (id) => {
   }
 };
 
-/**
- * 删除待办
- * @param {string} id 待办ID
- * @returns {Promise<boolean>} 是否成功
- */
 const deleteTodo = async (id) => {
   try {
     await getDB().collection('todos').doc(id).remove();
@@ -171,11 +131,6 @@ const deleteTodo = async (id) => {
   }
 };
 
-/**
- * 放弃待办
- * @param {string} id 待办ID
- * @returns {Promise<boolean>} 是否成功
- */
 const abandonTodo = async (id) => {
   try {
     await getDB().collection('todos').doc(id).update({
@@ -193,16 +148,11 @@ const abandonTodo = async (id) => {
   }
 };
 
-/**
- * 清除所有待办数据
- * @returns {Promise<boolean>} 是否成功
- */
 const clearAllTodos = async () => {
   try {
     const db = getDB();
     const { data } = await db.collection('todos').limit(100).get();
     
-    // 批量删除
     await Promise.all(data.map(todo => 
       db.collection('todos').doc(todo._id).remove()
     ));
@@ -215,12 +165,6 @@ const clearAllTodos = async () => {
   }
 };
 
-/**
- * 更新待办
- * @param {string} id 待办ID
- * @param {Object} updateData 更新数据
- * @returns {Promise<boolean>} 是否成功
- */
 const updateTodo = async (id, updateData) => {
   try {
     await getDB().collection('todos').doc(id).update({ data: updateData });
@@ -231,12 +175,6 @@ const updateTodo = async (id, updateData) => {
   }
 };
 
-/**
- * 获取日期统计（优化：复用 getTodosByMonth）
- * @param {number} year 年份
- * @param {number} month 月份
- * @returns {Promise<Object>} 日期统计
- */
 const getDateStats = async (year, month) => {
   try {
     const todos = await getTodosByMonth(year, month);
@@ -258,7 +196,6 @@ const getDateStats = async (year, month) => {
       }
     });
     
-    // 计算 hasIncomplete（有未完成）
     Object.values(stats).forEach(stat => {
       stat.hasIncomplete = stat.completed < stat.total;
     });
@@ -270,15 +207,47 @@ const getDateStats = async (year, month) => {
   }
 };
 
+const getAllTodos = async () => {
+  try {
+    const db = getDB();
+    const { data: todos } = await db.collection('todos').get();
+    return todos || [];
+  } catch (e) {
+    console.error('[Storage] getAllTodos error:', e);
+    return [];
+  }
+};
+
+const getTodoStats = async () => {
+  try {
+    const db = wx.cloud.database();
+    
+    const { data: todos } = await db.collection('todos').where({
+      abandoned: false
+    }).get();
+    
+    const total = todos.length;
+    const completed = todos.filter(todo => todo.completed).length;
+    const pending = total - completed;
+    
+    return { total, completed, pending };
+  } catch (e) {
+    console.error('[Storage] getTodoStats error:', e);
+    return { total: 0, completed: 0, pending: 0 };
+  }
+};
+
 module.exports = {
   addTodo,
   getTodosByDate,
   getTodayTodos,
   getTodosByMonth,
+  getAllTodos,
   toggleTodo,
   deleteTodo,
   abandonTodo,
   clearAllTodos,
   updateTodo,
-  getDateStats
+  getDateStats,
+  getTodoStats
 };

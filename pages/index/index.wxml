@@ -1,35 +1,42 @@
 <view class="page-container">
   <scroll-view class="list-container" scroll-y enable-flex>
-    <view wx:if="{{todos.length === 0}}" class="empty-tip">暂无待办事项</view>
+    <!-- 空状态 -->
+    <view class="empty-tip" wx:if="{{!todos || todos.length === 0}}">暂无待办事项</view>
 
-    <view class="todo-collapse-list">
-      <block wx:for="{{todos}}" wx:for-index="index" wx:key="_id">
-        <view class="todo-wrapper {{index !== todos.length - 1 ? 'todo-wrapper-has-border' : ''}}">
-          <van-swipe-cell right-width="{{item.completed || item.abandoned ? (0) : (120)}}" disabled="{{item.completed || item.abandoned}}" data-id="{{item._id}}">
-            <view class="todo-item-base" bindtap="onToggleExpand" data-id="{{item._id}}">
-              <view class="importance-bar importance-bar-{{item.importance === 1 ? 'low' : item.importance === 3 ? 'high' : 'medium'}}"></view>
-              <view class="todo-header">
-                <view class="todo-title-row">
-                  <text class="todo-title {{item.completed ? 'todo-title-completed' : ''}} {{item.abandoned ? 'todo-title-abandoned' : ''}}">{{item.title}}</text>
+    <view class="todo-collapse-list" wx:if="{{todos && todos.length > 0}}">
+      <view class="todo-wrapper {{idx !== todos.length - 1 ? 'todo-wrapper-has-border' : ''}}" wx:for="{{todos}}" wx:for-index="idx" wx:key="_id">
+        <van-swipe-cell right-width="{{item.completed || item.abandoned ? 0 : 120}}" disabled="{{item.completed || item.abandoned}}" data-id="{{item._id}}">
+          <view class="todo-item-base" bindtap="onToggleExpand" data-id="{{item._id}}">
+            <view class="importance-bar importance-bar-{{item.importance === 1 ? 'low' : item.importance === 3 ? 'high' : 'medium'}}"></view>
+            <view class="todo-content">
+              <view class="todo-bg-progress" wx:if="{{!item.completed && !item.abandoned}}">
+                <view class="todo-bg-progress-fill importance-{{item.importance === 1 ? 'low' : item.importance === 3 ? 'high' : 'medium'}}" style="width: {{item.progressPercent}}%;"></view>
+              </view>
+              <view class="todo-header-center">
+                <text class="todo-title {{item.completed ? 'todo-title-completed' : ''}} {{item.abandoned ? 'todo-title-abandoned' : ''}}">{{item.title}}</text>
+                <view class="todo-right-section">
+                  <text class="days-badge {{item.daysLeft <= 1 ? 'urgent' : item.daysLeft <= 3 ? 'warning' : ''}}" wx:if="{{!item.completed && !item.abandoned}}">{{item.daysLeftText}}</text>
+                  <text class="days-badge completed" wx:if="{{item.completed}}">已完成</text>
+                  <text class="days-badge abandoned" wx:if="{{item.abandoned}}">已放弃</text>
                   <view class="expand-arrow {{expandedTodoId === item._id ? 'expand-arrow-expanded' : ''}}">▼</view>
                 </view>
               </view>
             </view>
-            <view slot="right" class="swipe-right-actions" data-id="{{item._id}}">
-              <view class="action-btn action-btn-edit" catchtap="onToggleTodo" data-id="{{item._id}}">完成</view>
-              <view class="action-btn action-btn-delete" catchtap="onAbandonTodo" data-id="{{item._id}}">放弃</view>
-            </view>
-          </van-swipe-cell>
-          <view class="collapse-content {{expandedTodoId === item._id ? 'collapse-content-expanded' : ''}}">
-            <view class="detail-text" wx:if="{{item.content}}">
-              <text>{{item.content}}</text>
-            </view>
-            <view class="detail-text detail-text-empty" wx:else>
-              <text>暂无详细内容</text>
-            </view>
+          </view>
+          <view slot="right" class="swipe-right-actions" data-id="{{item._id}}">
+            <view class="action-btn action-btn-edit" catchtap="onToggleTodo" data-id="{{item._id}}">完成</view>
+            <view class="action-btn action-btn-delete" catchtap="onAbandonTodo" data-id="{{item._id}}">放弃</view>
+          </view>
+        </van-swipe-cell>
+        <view class="collapse-content {{expandedTodoId === item._id ? 'collapse-content-expanded' : ''}}">
+          <view class="detail-text" wx:if="{{item.content}}">
+            <text>{{item.content}}</text>
+          </view>
+          <view class="detail-text detail-text-empty" wx:else>
+            <text>暂无详细内容</text>
           </view>
         </view>
-      </block>
+      </view>
     </view>
   </scroll-view>
 
@@ -58,14 +65,19 @@
     confirm-button-color="#1989fa">
     <view class="edit-dialog">
       <view class="dialog-field">
-        <text class="dialog-label">内容</text>
-        <textarea class="dialog-textarea" value="{{editContent}}" bindinput="onEditContentChange" placeholder="请输入内容" />
+        <text class="dialog-label">待办标题</text>
+        <input class="dialog-input" value="{{editTitle}}" bindinput="onEditTitleInput" placeholder="请输入待办标题"/>
       </view>
       <view class="dialog-field">
-        <view class="importance-options">
-          <view class="importance-option {{editImportance === 1 ? 'active importance-low' : ''}}" bindtap="onImportanceChange" data-value="1">低</view>
-          <view class="importance-option {{editImportance === 2 ? 'active importance-mid' : ''}}" bindtap="onImportanceChange" data-value="2">中</view>
-          <view class="importance-option {{editImportance === 3 ? 'active importance-high' : ''}}" bindtap="onImportanceChange" data-value="3">高</view>
+        <text class="dialog-label">详细内容</text>
+        <textarea class="dialog-textarea" value="{{editContent}}" bindinput="onEditContentInput" placeholder="请输入详细内容（可选）"/>
+      </view>
+      <view class="dialog-field">
+        <text class="dialog-label">重要程度</text>
+        <view class="importance-selector">
+          <view class="importance-option {{editImportance === 1 ? 'selected' : ''}}" bindtap="onSelectImportance" data-value="1">低</view>
+          <view class="importance-option {{editImportance === 2 ? 'selected' : ''}}" bindtap="onSelectImportance" data-value="2">中</view>
+          <view class="importance-option {{editImportance === 3 ? 'selected' : ''}}" bindtap="onSelectImportance" data-value="3">高</view>
         </view>
       </view>
     </view>

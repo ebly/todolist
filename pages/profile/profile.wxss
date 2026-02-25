@@ -1,0 +1,320 @@
+.container {
+  min-height: 100vh;
+  background-color: #f7f8f9;
+  padding: 16px;
+}
+
+/* 用户卡片 */
+.user-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin-right: 16px;
+  border: 2px solid #ebedf0;
+}
+
+.avatar-placeholder {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+}
+
+.avatar-icon {
+  font-size: 40px;
+}
+
+.user-detail {
+  flex: 1;
+}
+
+.nickname {
+  display: block;
+  font-size: 20px;
+  font-weight: 600;
+  color: #323233;
+  margin-bottom: 6px;
+}
+
+.user-id {
+  display: block;
+  font-size: 12px;
+  color: #969799;
+}
+
+.login-tip {
+  display: block;
+  font-size: 13px;
+  color: #969799;
+}
+
+/* 登录按钮 */
+.login-btn-wrapper {
+  display: flex;
+  justify-content: center;
+}
+
+.login-btn {
+  width: 200px;
+  height: 44px;
+  line-height: 44px;
+  background: linear-gradient(135deg, #07c160 0%, #05a050 100%);
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 22px;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.login-btn::after {
+  border: none;
+}
+
+.logout-btn {
+  width: 200px;
+  height: 44px;
+  line-height: 44px;
+  background-color: #f5f5f5;
+  color: #666666;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: 22px;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+.logout-btn::after {
+  border: none;
+}
+
+/* 功能菜单 */
+.menu-list {
+  background-color: #ffffff;
+  border-radius: 12px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-icon {
+  font-size: 20px;
+  margin-right: 12px;
+}
+
+.menu-text {
+  flex: 1;
+  font-size: 15px;
+  color: #323233;
+}
+
+.menu-arrow {
+  font-size: 18px;
+  color: #c8c9cc;
+}
+
+/* 统计卡片 */
+.stats-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.stats-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #323233;
+  margin-bottom: 16px;
+}
+
+.stats-grid {
+  display: flex;
+  justify-content: space-around;
+}
+
+.stats-item {
+  text-align: center;
+}
+
+.stats-num {
+  display: block;
+  font-size: 28px;
+  font-weight: 600;
+  color: #1989fa;
+  margin-bottom: 4px;
+}
+
+.stats-label {
+  display: block;
+  font-size: 13px;
+  color: #969799;
+}
+
+/* 登录确认弹窗 */
+.login-popup {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.login-popup.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.login-popup-content {
+  background-color: #ffffff;
+  border-radius: 20px 20px 0 0;
+  padding: 0;
+  transform: translateY(100%);
+  transition: transform 0.3s ease;
+}
+
+.login-popup.show .login-popup-content {
+  transform: translateY(0);
+}
+
+.login-popup-header {
+  display: flex;
+  align-items: center;
+  padding: 20px 20px 12px;
+}
+
+.login-popup-app-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  margin-right: 10px;
+}
+
+.login-popup-app-name {
+  font-size: 16px;
+  color: #323233;
+  font-weight: 500;
+}
+
+.login-popup-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #323233;
+  padding: 0 20px 8px;
+}
+
+.login-popup-desc {
+  font-size: 14px;
+  color: #969799;
+  padding: 0 20px 20px;
+}
+
+.login-popup-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 20px;
+}
+
+.login-popup-avatar-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-bottom: 16px;
+}
+
+.login-popup-avatar-btn::after {
+  border: none;
+}
+
+.login-popup-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  margin-bottom: 8px;
+  background-color: #f5f5f5;
+}
+
+.login-popup-avatar-tip {
+  font-size: 12px;
+  color: #969799;
+}
+
+.login-popup-input {
+  width: 100%;
+  height: 44px;
+  line-height: 44px;
+  padding: 0 16px;
+  background-color: #f7f8f9;
+  border-radius: 8px;
+  font-size: 16px;
+  color: #323233;
+  box-sizing: border-box;
+}
+
+.login-popup-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+}
+
+.login-popup-btn {
+  height: 48px;
+  line-height: 48px;
+  text-align: center;
+  border-radius: 8px;
+  font-size: 16px;
+}
+
+.login-popup-btn.cancel {
+  background-color: #f5f5f5;
+  color: #323233;
+}
+
+.login-popup-btn.confirm {
+  background: linear-gradient(135deg, #07c160 0%, #05a050 100%);
+  color: #ffffff;
+}
