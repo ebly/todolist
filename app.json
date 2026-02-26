@@ -12,8 +12,8 @@
   },
   "lazyCodeLoading": "requiredComponents",
   "tabBar": {
-    "color": "#969799",
-    "selectedColor": "#1989fa",
+    "color": "#a6b2c4",
+    "selectedColor": "#13EC5B",
     "backgroundColor": "#ffffff",
     "borderStyle": "black",
     "list": [

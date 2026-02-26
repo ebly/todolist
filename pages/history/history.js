@@ -8,7 +8,6 @@ const todoCache = require('../../utils/todoCache.js');
 const DEFAULT_DIALOG_DATA = {
   editTitle: '',
   editContent: '',
-  editImportance: 2,
   editStartDate: '',
   editDate: '',
   editPermanent: false
@@ -23,6 +22,7 @@ Page({
     monthTodos: {},
     allMonthTodos: [],
     selectedDate: '',
+    selectedDateDay: new Date().getDate(),
     selectedDateTodos: [],
     todayDateKey: '',
     expandedTodoId: null,
@@ -37,7 +37,8 @@ Page({
 
   onLoad() {
     const today = dateUtil.getTodayKey();
-    this.setData({ todayDateKey: today, selectedDate: today });
+    const day = new Date().getDate();
+    this.setData({ todayDateKey: today, selectedDate: today, selectedDateDay: day });
     this.initialLoad();
   },
 
@@ -187,7 +188,9 @@ Page({
     const dateKey = e.currentTarget.dataset.datekey;
     if (!dateKey) return;
     
-    this.setData({ selectedDate: dateKey });
+    const day = parseInt(dateKey.split('-')[2]);
+    
+    this.setData({ selectedDate: dateKey, selectedDateDay: day });
     this.loadTodosForDate(dateKey);
   },
 
@@ -215,8 +218,9 @@ Page({
     }
     
     const targetDate = this.getTargetDate(currentYear, currentMonth, selectedDate);
+    const day = parseInt(targetDate.split('-')[2]);
     
-    this.setData({ currentYear, currentMonth, selectedDate: targetDate });
+    this.setData({ currentYear, currentMonth, selectedDate: targetDate, selectedDateDay: day });
     this.loadMonthData(currentYear, currentMonth, false);
   },
 
@@ -294,7 +298,7 @@ Page({
       showAddDialog: false,
       editContent: todo.content || '',
       editTitle: todo.title || '',
-      editImportance: todo.importance || 2,
+
       editStartDate: todo.startDate || selectedDate,
       editDate: selectedDate,
       editPermanent: todo.permanent || false
@@ -352,10 +356,6 @@ Page({
     this.setData({ editContent: e.detail.value });
   },
 
-  onImportanceChange(e) {
-    this.setData({ editImportance: parseInt(e.currentTarget.dataset.value) });
-  },
-
   onDateChange(e) {
     this.setData({ editDate: e.detail.value });
   },
@@ -367,7 +367,7 @@ Page({
   async onSaveEdit() {
     if (!auth.checkLogin()) return;
     
-    const { editingTodo, editContent, selectedDate, showAddDialog, editTitle, editImportance, editDate, editStartDate, editPermanent } = this.data;
+    const { editingTodo, editContent, selectedDate, showAddDialog, editTitle, editDate, editStartDate, editPermanent } = this.data;
     const newTitle = editTitle ? editTitle.trim() : '';
     
     if (!newTitle) {
@@ -383,7 +383,6 @@ Page({
       const todoData = {
         title: newTitle,
         content: editContent ? editContent.trim() : '',
-        importance: editImportance,
         permanent: editPermanent
       };
 
@@ -415,6 +414,34 @@ Page({
       }
     } finally {
       wx.hideLoading();
+    }
+  },
+
+  async onDeleteTodo(e) {
+    if (!auth.checkLogin()) return;
+    
+    const id = e.currentTarget.dataset.id;
+    if (!id) return;
+
+    const res = await wx.showModal({
+      title: '确认删除',
+      content: '确定要删除这条待办吗？',
+      confirmText: '删除',
+      confirmColor: '#ff4d4f'
+    });
+
+    if (res.confirm) {
+      wx.showLoading({ title: '删除中' });
+      const result = await storage.deleteTodo(id);
+      wx.hideLoading();
+
+      if (result) {
+        wx.showToast({ title: '删除成功', icon: 'success' });
+        pageManager.setDataChangedPending();
+        this.loadMonthData(this.data.currentYear, this.data.currentMonth, true);
+      } else {
+        wx.showToast({ title: '删除失败', icon: 'none' });
+      }
     }
   },
 

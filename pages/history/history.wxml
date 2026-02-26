@@ -1,16 +1,13 @@
 <view class="page-container">
   <view class="calendar-section">
     <view class="calendar-header">
-      <view class="month-nav">
-        <view class="month-nav-btn" bindtap="onPrevMonth">
-          <text class="nav-arrow">‹</text>
-        </view>
-        <view class="current-month">{{currentYear}}年{{currentMonth}}月</view>
-        <view class="month-nav-btn" bindtap="onNextMonth">
-          <text class="nav-arrow">›</text>
-        </view>
+      <view class="month-nav-btn" bindtap="onPrevMonth">
+        <text class="nav-arrow">‹</text>
       </view>
-      <view class="add-btn-text" bindtap="onShowAddDialog">新增</view>
+      <view class="current-month">{{currentYear}}年{{currentMonth}}月</view>
+      <view class="month-nav-btn" bindtap="onNextMonth">
+        <text class="nav-arrow">›</text>
+      </view>
     </view>
 
     <view class="weekdays-row">
@@ -21,7 +18,7 @@
       <block wx:for="{{calendarWeeks}}" wx:key="index">
         <view class="week-row">
           <view 
-            class="day-cell {{day.empty ? 'day-cell-empty' : ''}} {{day.isToday ? 'day-cell-today' : ''}} {{day.isPast ? 'day-cell-past' : ''}} {{day.isFuture ? 'day-cell-future' : ''}} {{day.dateKey === selectedDate ? 'day-cell-selected' : ''}} {{day.hasIncomplete ? 'day-cell-has-todo-incomplete' : ''}}"
+            class="day-cell {{day.empty ? 'day-cell-empty' : ''}} {{day.isToday ? 'day-cell-today' : ''}} {{day.dateKey === selectedDate ? 'day-cell-selected' : ''}} {{day.hasIncomplete ? 'day-cell-has-todo-incomplete' : ''}}"
             wx:for="{{item.days}}"
             wx:for-item="day"
             wx:key="dateKey"
@@ -34,35 +31,33 @@
     </view>
   </view>
 
+  <!-- 当前日期标题 -->
+  <view class="date-header">
+    <view class="date-left">
+      <view class="date-dot"></view>
+      <text class="date-title">{{currentMonth}}月{{selectedDateDay}}日 任务</text>
+    </view>
+    <view class="add-btn-small" bindtap="onShowAddDialog">+ 新增</view>
+  </view>
+
   <view class="selected-date-section">
     <view class="selected-todos">
       <block wx:if="{{selectedDateTodos.length > 0}}">
-        <view class="todo-collapse-list">
-          <view class="todo-wrapper {{index !== selectedDateTodos.length - 1 ? 'todo-wrapper-has-border' : ''}}" wx:for="{{selectedDateTodos}}" wx:key="_id">
-            <van-swipe-cell right-width="120" disabled="{{item.completed || item.abandoned}}">
-              <view class="todo-item-base" bindtap="onToggleExpand" data-id="{{item._id}}">
-                <view class="importance-bar importance-bar-{{item.importance === 1 ? 'low' : item.importance === 3 ? 'high' : 'medium'}}"></view>
-                <view class="todo-header">
-                  <view class="todo-title-row">
-                    <text class="todo-title {{item.completed ? 'todo-title-completed' : ''}} {{item.abandoned ? 'todo-title-abandoned' : ''}}">{{item.title}}</text>
-                    <view class="expand-arrow {{expandedTodoId === item._id ? 'expand-arrow-expanded' : ''}}">▼</view>
-                  </view>
+        <view class="todo-list">
+          <van-swipe-cell right-width="{{item.completed ? 0 : 60}}" disabled="{{item.completed}}" wx:for="{{selectedDateTodos}}" wx:key="_id" data-id="{{item._id}}">
+            <view class="todo-card {{item.completed ? 'todo-card-completed' : ''}}">
+              <view class="todo-card-left-bar"></view>
+              <view class="todo-card-content">
+                <view class="todo-info" bindtap="onEditTodo" data-id="{{item._id}}">
+                  <text class="todo-title {{item.completed ? 'todo-title-completed' : ''}}">{{item.title}}</text>
+                  <text class="todo-desc" wx:if="{{item.content}}">{{item.content}}</text>
                 </view>
               </view>
-              <view slot="right" class="swipe-right-actions" data-id="{{item._id}}">
-                <view class="action-btn action-btn-edit" bindtap="onEditTodo" data-id="{{item._id}}">编辑</view>
-                <view class="action-btn action-btn-delete" bindtap="onDeleteTodo" data-id="{{item._id}}">删除</view>
-              </view>
-            </van-swipe-cell>
-            <view class="collapse-content {{expandedTodoId === item._id ? 'collapse-content-expanded' : ''}}">
-              <view class="detail-text" wx:if="{{item.content}}">
-                <text>{{item.content}}</text>
-              </view>
-              <view class="detail-text detail-text-empty" wx:else>
-                <text>暂无详细内容</text>
-              </view>
             </view>
-          </view>
+            <view slot="right" class="swipe-right-actions">
+              <view class="action-btn action-btn-delete" catchtap="onDeleteTodo" data-id="{{item._id}}">删除</view>
+            </view>
+          </van-swipe-cell>
         </view>
       </block>
       <view class="empty-tip" wx:else>
@@ -92,13 +87,6 @@
       <view class="dialog-field">
         <text class="dialog-label">内容</text>
         <textarea class="dialog-textarea" value="{{editContent}}" bindinput="onEditContentChange" placeholder="请输入内容" />
-      </view>
-      <view class="dialog-field">
-        <view class="importance-options">
-          <view class="importance-option {{editImportance === 1 ? 'active importance-low' : ''}}" bindtap="onImportanceChange" data-value="1">低</view>
-          <view class="importance-option {{editImportance === 2 ? 'active importance-mid' : ''}}" bindtap="onImportanceChange" data-value="2">中</view>
-          <view class="importance-option {{editImportance === 3 ? 'active importance-high' : ''}}" bindtap="onImportanceChange" data-value="3">高</view>
-        </view>
       </view>
       <view class="dialog-field">
         <view class="dialog-field-row">

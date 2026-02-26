@@ -1,66 +1,72 @@
 <view class="container">
-  <!-- 用户信息卡片 -->
-  <view class="user-card">
-    <view class="user-info" wx:if="{{isLoggedIn && userInfo}}">
-      <image class="avatar" src="{{userInfo.avatarUrl || '/assets/icon/default-avatar.png'}}" mode="aspectFill"></image>
-      <view class="user-detail">
-        <text class="nickname">{{userInfo.nickName || '用户'}}</text>
+  <!-- 未登录状态 -->
+  <view class="unlogin-section" wx:if="{{!isLoggedIn}}">
+    <view class="avatar-box">
+      <view class="avatar-bg">
+        <image class="avatar-icon" src="/assets/icon/default-avatar.png" mode="aspectFill"></image>
       </view>
     </view>
-    <view class="user-info" wx:else>
-      <image class="avatar" src="/assets/icon/default-avatar.png" mode="aspectFill"></image>
-      <view class="user-detail">
-        <text class="nickname">未登录</text>
-        <text class="login-tip">登录后同步您的待办数据</text>
-      </view>
+    <view class="unlogin-title">{{text.notLoggedIn}}</view>
+    <view class="login-btn" bindtap="onShowLoginPopup">
+      <text class="login-btn-icon">☰</text>
+      <text class="login-btn-text">{{text.loginBtnText}}</text>
     </view>
-    
   </view>
 
+  <!-- 已登录状态 -->
+  <view class="logged-in-section" wx:if="{{isLoggedIn}}">
+    <view class="avatar-box">
+      <view class="avatar-bg">
+        <image class="avatar-icon logged-avatar" src="{{userInfo.avatarUrl || '/assets/icon/default-avatar.png'}}" mode="aspectFill"></image>
+      </view>
+    </view>
+    <view class="user-name">{{userInfo.nickName || text.defaultNickname}}</view>
+    <view class="join-date">{{joinDateText}}</view>
+    
+    <!-- 统计卡片 -->
+    <view class="stats-row">
+      <view class="stat-card">
+        <text class="stat-num">{{stats.total || 0}}</text>
+        <text class="stat-label">任务总数</text>
+      </view>
+      <view class="stat-card highlight">
+        <text class="stat-num">{{stats.completed || 0}}</text>
+        <text class="stat-label">已完成</text>
+      </view>
+      <view class="stat-card">
+        <text class="stat-num">{{stats.pending || 0}}</text>
+        <text class="stat-label">进行中</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 账户管理 -->
+  <view class="section-title" wx:if="{{isLoggedIn}}">账户管理</view>
+  
   <!-- 功能菜单 -->
   <view class="menu-list">
-    <view class="menu-item" bindtap="onClearAll" wx:if="{{isLoggedIn}}">
-      <view class="menu-icon">🗑️</view>
-      <text class="menu-text">清除所有数据</text>
+    <view class="menu-item" bindtap="onDataManage" wx:if="{{isLoggedIn}}">
+      <view class="menu-icon-wrapper green">
+        <text class="menu-icon-text">💾</text>
+      </view>
+      <text class="menu-text">数据管理</text>
       <view class="menu-arrow">›</view>
     </view>
     
     <view class="menu-item" bindtap="onAbout">
-      <view class="menu-icon">ℹ️</view>
-      <text class="menu-text">关于</text>
-      <view class="menu-arrow">›</view>
-    </view>
-    
-    <!-- 登录按钮 -->
-    <view class="menu-item" bindtap="onShowLoginPopup" wx:if="{{!isLoggedIn}}">
-      <view class="menu-icon">🔑</view>
-      <text class="menu-text">登录</text>
+      <view class="menu-icon-wrapper green">
+        <text class="menu-icon-text">i</text>
+      </view>
+      <text class="menu-text">关于应用</text>
       <view class="menu-arrow">›</view>
     </view>
     
     <view class="menu-item" bindtap="onLogout" wx:if="{{isLoggedIn}}">
-      <view class="menu-icon">🚪</view>
+      <view class="menu-icon-wrapper green">
+        <text class="menu-icon-text">🚪</text>
+      </view>
       <text class="menu-text">退出登录</text>
       <view class="menu-arrow">›</view>
-    </view>
-  </view>
-
-  <!-- 统计信息 -->
-  <view class="stats-card" wx:if="{{isLoggedIn && stats}}">
-    <view class="stats-title">待办统计</view>
-    <view class="stats-grid">
-      <view class="stats-item">
-        <text class="stats-num">{{stats.total || 0}}</text>
-        <text class="stats-label">总待办</text>
-      </view>
-      <view class="stats-item">
-        <text class="stats-num">{{stats.completed || 0}}</text>
-        <text class="stats-label">已完成</text>
-      </view>
-      <view class="stats-item">
-        <text class="stats-num">{{stats.pending || 0}}</text>
-        <text class="stats-label">进行中</text>
-      </view>
     </view>
   </view>
 </view>
@@ -70,22 +76,22 @@
   <view class="login-popup-content" catchtap="stopPropagation">
     <view class="login-popup-header">
       <image class="login-popup-app-icon" src="/assets/icon/xucheng.png" mode="aspectFill"></image>
-      <text class="login-popup-app-name">叙程</text>
+      <text class="login-popup-app-name">{{loginText.appName}}</text>
     </view>
-    <view class="login-popup-title">完善个人资料</view>
-    <view class="login-popup-desc">用于展示个人资料，同步你的待办数据</view>
+    <view class="login-popup-title">{{loginText.title}}</view>
+    <view class="login-popup-desc">{{loginText.desc}}</view>
     
     <view class="login-popup-form">
       <button class="login-popup-avatar-btn" open-type="chooseAvatar" bind:chooseavatar="onChooseAvatar">
         <image class="login-popup-avatar" src="{{(tempUserInfo && tempUserInfo.avatarUrl) || '/assets/icon/default-avatar.png'}}" mode="aspectFill"></image>
-        <text class="login-popup-avatar-tip">点击选择头像</text>
+        <text class="login-popup-avatar-tip">{{loginText.avatarTip}}</text>
       </button>
-      <input type="nickname" class="login-popup-input" placeholder="请输入昵称" value="{{tempUserInfo ? tempUserInfo.nickName : ''}}" bindinput="onNickNameInput"/>
+      <input type="nickname" class="login-popup-input" placeholder="{{loginText.nicknamePlaceholder}}" value="{{tempUserInfo ? tempUserInfo.nickName : ''}}" bindinput="onNickNameInput"/>
     </view>
     
     <view class="login-popup-btns">
-      <view class="login-popup-btn cancel" bindtap="onCloseLoginPopup">取消</view>
-      <view class="login-popup-btn confirm" bindtap="onConfirmLogin">确认</view>
+      <view class="login-popup-btn cancel" bindtap="onCloseLoginPopup">{{loginText.cancelBtn}}</view>
+      <view class="login-popup-btn confirm" bindtap="onConfirmLogin">{{loginText.confirmBtn}}</view>
     </view>
   </view>
 </view>

@@ -2,7 +2,6 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background-color: #f7f8f9;
   position: relative;
 }
 
@@ -14,98 +13,58 @@
 
 .calendar-section {
   flex-shrink: 0;
-  background-color: #ffffff;
 }
 
 .calendar {
-  background-color: #ffffff;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
+/* ==================== 日历相关样式 ==================== */
+
+/* 日历头部 */
 .calendar-header {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  height: 48px;
-  padding: 0 4px;
-  position: relative;
 }
 
-.month-nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-}
-
+/* 月份导航按钮 */
 .month-nav-btn {
   width: 36px;
   height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  margin: 0 8px;
 }
 
+/* 导航箭头 */
 .nav-arrow {
   font-size: 16px;
   color: #323233;
   font-weight: bold;
 }
 
-.add-btn-text {
-  font-size: 14px;
-  color: #1989fa;
-  padding: 8px 12px;
-}
-
+/* 当前月份文字 */
 .current-month {
+  flex: 1;
   font-size: 16px;
   font-weight: 600;
   color: #323233;
-  white-space: nowrap;
+  text-align: center;
 }
 
-.calendar-body {
-  display: flex;
-  flex-direction: column;
-}
-
+/* 星期标题行 */
 .weekdays-row {
   display: flex;
-  background-color: #f5f5f5;
-  padding: 8px 0;
 }
 
 .weekday {
   flex: 1;
   text-align: center;
-  font-size: 12px;
+  font-size: 10px;
   color: #969799;
 }
 
-.weekday:first-child,
-.weekday:last-child {
-  color: #ee6666;
-}
-
-.calendar-body {
-  padding: 0 8px;
-}
-
-.days-container {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.week-row {
-  display: flex;
-}
-
+/* 日历格子 */
 .day-cell {
   flex: 1;
   display: flex;
@@ -116,87 +75,103 @@
   height: 40px;
 }
 
-.day-cell.empty {
-  background-color: transparent;
-  border: 1px solid transparent;
+.day-cell-empty {
 }
 
-.day-cell.today .day-text {
-  color: #323233;
+.day-cell-today .day-text {
+  font-weight: 600;
+  color: #07c160;
+}
+
+.day-cell-selected .day-text {
+  background-color: #13EC5B;
+  color: #ffffff;
+  border-radius: 4px;
+}
+
+.day-cell-has-todo-incomplete {
+}
+
+/* 日期文字 */
+.day-text {
+  font-size: 13px;
+  color: #333;
+  font-weight:500;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.add-btn-text {
+  font-size: 14px;
+  color: #1989fa;
+  padding: 8px 12px;
+}
+
+.calendar-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.calendar-body {
+  padding: 0 8px;
+}
+
+.days-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.week-row {
+  display: flex;
+}
+
+/* 日期标题 */
+.date-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background-color: #f7f8f9;
+}
+
+.date-left {
+  display: flex;
+  align-items: center;
+}
+
+.date-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #13EC5B;
+  margin-right: 6px;
+}
+
+.date-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #626c76;
+}
+
+.add-btn-small {
+  padding: 6px 12px;
+  background-color: #13EC5B;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #ffffff;
   font-weight: 600;
 }
 
-/* 有未完成待办的日期 - 浅绿色底色 */
-.day-cell.has-todo-incomplete {
-  background-color: #e6f7ed;
-  border: 1px solid #e6f7ed;
-}
-
-/* 有待办未完成 - 浅绿色圈圈 */
-.day-text.has-incomplete {
-  background-color: #e6f7ed;
-  color: #07c160;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.25);
-}
-
-/* 全部完成 - 绿色圈圈 */
-.day-text.has-completed {
-  background-color: #07c160;
-  color: #ffffff;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-}
-
-.day-cell.past {
-  background-color: #e0e0e0;
-  border: 1px solid #e0e0e0;
-}
-
-.day-cell.today-bg {
-  background-color: #bbdefb;
-  border: 1px solid #bbdefb;
-}
-
-.day-cell.future {
-  background-color: #f5f5f5;
-  border: 1px solid #f5f5f5;
-}
-
-.day-cell.selected {
-  border: 1px solid #1989fa;
-}
-
-.day-text {
-  font-size: 14px;
-  color: #323233;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-}
-
 .selected-date-section {
-  background-color: #ffffff;
   flex: 1;
   overflow-y: auto;
 }
 
 .selected-todos {
   flex: 1;
-  background-color: #ffffff;
 }
 
 .empty-tip {
@@ -207,95 +182,46 @@
 
 /* ==================== 待办列表样式 ==================== */
 
-.todo-collapse-list {
+.todo-list {
   display: flex;
   flex-direction: column;
-}
-
-.todo-wrapper {
-  background-color: transparent;
-}
-
-.todo-wrapper.has-border {
-  border-bottom: 1px solid #ebedf0;
-}
-
-.todo-header {
-  flex: 1;
-}
-
-.todo-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.expand-arrow {
-  font-size: 12px;
-  color: #969799;
-  transition: transform 0.3s ease;
-  margin-left: 8px;
-  text-decoration: none !important;
-}
-
-.expand-arrow.expanded {
-  transform: rotate(180deg);
-}
-
-.todo-collapse-content {
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
-  background-color: #f7f8f9;
+  gap: 12px;
   padding: 0 16px;
 }
 
-.todo-collapse-content.expanded {
-  max-height: 500px;
-  padding: 12px 16px;
-  opacity: 1;
-}
-
-.todo-detail {
-  font-size: 14px;
-  color: #323233;
-  line-height: 1.5;
-}
-
-.todo-detail.empty {
-  color: #969799;
-}
-
-.todo-item {
+.todo-card {
   display: flex;
-  align-items: center;
-  background-color: transparent;
-  height: 48px;
-  padding: 0 12px;
+  background-color: #e8f8ef;
+  border-radius: 6px 0 0 6px;
+  overflow: hidden;
+  min-height: 50px;
+  gap: 10px;
 }
 
-.importance-bar {
-  width: 4px;
-  height: 24px;
-  border-radius: 2px;
-  margin-right: 12px;
+.todo-card-left-bar {
+  width: 6px;
+  background-color: #13EC5B;
   flex-shrink: 0;
 }
 
-.importance-bar.importance-1 {
-  background-color: #ffb300;
+.todo-card-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 8px 8px 8px 0;
+  gap: 12px;
 }
 
-.importance-bar.importance-2 {
-  background-color: #f57c00;
-}
-
-.importance-bar.importance-3 {
-  background-color: #d32f2f;
+.todo-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .todo-title {
+  font-size: 16px;
+  font-weight: 600;
   color: #323233;
 }
 
@@ -304,49 +230,15 @@
   text-decoration: line-through;
 }
 
-/* 放弃的待办样式 */
-.todo-title-abandoned {
+.todo-desc {
+  font-size: 13px;
   color: #969799;
-  text-decoration: line-through;
 }
 
-/* 状态标签 */
-.todo-status {
-  font-size: 12px;
-  color: #07c160;
-  margin-left: 8px;
-  padding: 2px 6px;
-  background-color: #e6f7ed;
-  border-radius: 4px;
-}
-
-.todo-status.abandoned {
-  color: #969799;
-  background-color: #ebedf0;
-}
-
-.swipe-right-actions {
-  display: flex;
-  align-items: center;
-  height: 100%;
-}
-
-.action-btn {
-  width: 60px;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
+.todo-time {
   font-size: 14px;
-}
-
-.swipe-right-actions .action-btn.edit {
-  background-color: #1989fa;
-}
-
-.swipe-right-actions .action-btn.delete {
-  background-color: #ff4d4f;
+  color: #969799;
+  flex-shrink: 0;
 }
 
 /* ==================== 对话框样式 ==================== */
@@ -412,41 +304,29 @@
   white-space: nowrap;
 }
 
-/* 优先级选项 */
-.importance-options {
-  display: flex;
-  gap: 12px;
-  margin-top: 8px;
-}
-
-.importance-option {
-  padding: 6px 16px;
-  border-radius: 4px;
-  font-size: 14px;
-  color: #646566;
-  background-color: #f5f5f5;
-  border: 1px solid #ebedf0;
-  transition: all 0.3s ease;
-}
-
-.importance-option.active {
-  color: #ffffff;
-  border-color: transparent;
-}
-
-.importance-option.active.importance-low {
-  background-color: #ffb300;
-}
-
-.importance-option.active.importance-mid {
-  background-color: #f57c00;
-}
-
-.importance-option.active.importance-high {
-  background-color: #d32f2f;
-}
-
 /* switch 样式调整 */
 .dialog-field switch {
   margin-left: 8px;
+}
+
+/* 滑动删除样式 */
+.swipe-right-actions {
+  display: flex;
+  align-items: center;
+  height: 100%;
+}
+
+.action-btn {
+  width: 60px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.action-btn-delete {
+  background-color: #ff4d4f;
+  border-radius: 0 6px 6px 0;
 }
