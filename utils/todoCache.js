@@ -4,6 +4,8 @@
  * 带缓存大小限制和过期机制
  */
 
+const dateUtil = require('./dateUtil.js');
+
 const CACHE_KEY = 'todo_cache';
 const CACHE_VERSION = '1.1';
 
@@ -69,8 +71,8 @@ const cleanupCacheData = (todos) => {
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
     
     // 分离活跃待办和已完成待办
-    const activeTodos = filtered.filter(t => !t.completed && !t.abandoned);
-    const completedTodos = filtered.filter(t => t.completed || t.abandoned);
+    const activeTodos = filtered.filter(t => !t.completed);
+    const completedTodos = filtered.filter(t => t.completed);
     
     // 只保留最近30天的已完成待办
     const recentCompleted = completedTodos.filter(t => {
@@ -191,10 +193,14 @@ const updateInCache = (id, updateData) => {
 /**
  * 切换待办完成状态（本地缓存）
  * @param {string} id 待办ID
- * @param {boolean} completed 完成状态
+ * @param {string} status 完成状态 ('done', 'abandoned', '')
  */
-const toggleCacheTodo = (id, completed) => {
-  updateInCache(id, { completed, abandoned: false });
+const toggleCacheTodo = (id, status) => {
+  const updateData = { completed: status };
+  if (status === 'done') {
+    updateData.endDate = dateUtil.getTodayKey();
+  }
+  updateInCache(id, updateData);
 };
 
 /**
@@ -202,7 +208,10 @@ const toggleCacheTodo = (id, completed) => {
  * @param {string} id 待办ID
  */
 const abandonCacheTodo = (id) => {
-  updateInCache(id, { abandoned: true, completed: false });
+  updateInCache(id, {
+    completed: 'abandoned',
+    endDate: dateUtil.getTodayKey()
+  });
 };
 
 /**

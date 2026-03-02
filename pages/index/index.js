@@ -11,16 +11,25 @@ let isLoading = false;
 Page({
   data: {
     todos: [],
+    filteredTodos: [],
+    highPriorityTodos: [],
+    normalPriorityTodos: [],
+    activeFilter: 'all',
     currentDate: '',
     titleDate: '',
     currentDateKey: '',
-    expandedTodoId: null,
     showAbandonDialog: false,
     abandonTodoId: '',
+    showViewDialog: false,
+    viewTitle: '',
+    viewContent: '',
+    viewEndDate: '',
+    viewPermanent: false,
+    viewPriority: 'normal',
     showEditDialog: false,
     editTitle: '',
     editContent: '',
-    editImportance: 2,
+    editPriority: 'normal',
     editingTodo: null,
     initialized: false
   },
@@ -36,22 +45,21 @@ Page({
     }
     
     if (!auth.checkLogin()) {
-      this.setData({ todos: [] });
+      this.setData({ todos: [], filteredTodos: [], highPriorityTodos: [], normalPriorityTodos: [] });
       return;
     }
     
     const { needRefresh } = pageManager.checkRefreshNeeded();
-    if (needRefresh) {
-      this.loadTodos(true);
-    }
+    // 如果需要刷新则从后台获取，否则从缓存拉取
+    this.loadTodos(needRefresh);
   },
 
   initDate() {
     const dateInfo = dateUtil.formatDate();
-    wx.setNavigationBarTitle({ title: '今日待办' });
+    wx.setNavigationBarTitle({ title: '任务' });
     wx.setNavigationBarColor({
       frontColor: '#000000',
-      backgroundColor: '#f7f8f9'
+      backgroundColor: '#ffffff'
     });
     this.setData({
       currentDate: dateInfo.fullDate,
@@ -62,7 +70,7 @@ Page({
 
   async initialLoad() {
     if (!auth.checkLogin()) {
-      this.setData({ initialized: true, todos: [] });
+      this.setData({ initialized: true, todos: [], filteredTodos: [], highPriorityTodos: [], normalPriorityTodos: [] });
       return;
     }
     
@@ -71,8 +79,9 @@ Page({
   },
 
   async loadTodos(forceRefresh = false) {
+    console.log('[Index] loadTodos - forceRefresh:', forceRefresh);
     if (!auth.checkLogin()) {
-      this.setData({ todos: [] });
+      this.setData({ todos: [], filteredTodos: [], highPriorityTodos: [], normalPriorityTodos: [] });
       return;
     }
 
@@ -83,10 +92,13 @@ Page({
     
     if (!forceRefresh) {
       const cachedTodos = todoCache.getCache();
+      console.log('[Index] 尝试使用缓存，缓存是否存在:', !!cachedTodos, '缓存数量:', cachedTodos ? cachedTodos.length : 0);
       if (cachedTodos) {
+        console.log('[Index] 使用缓存数据:', JSON.stringify(cachedTodos, null, 2));
         const todayTodos = this.filterTodayTodos(cachedTodos, currentDateKey);
+        console.log('[Index] 过滤后今日任务数量:', todayTodos.length);
         const processedTodos = dataLoader.processTodosWithProgress(todayTodos, currentDateKey);
-        this.setData({ todos: processedTodos, expandedTodoId: null });
+        this.updateTodoData(processedTodos);
         isLoading = false;
         return;
       }
@@ -103,7 +115,7 @@ Page({
       
       const todayTodos = this.filterTodayTodos(allTodos, currentDateKey);
       const processedTodos = dataLoader.processTodosWithProgress(todayTodos, currentDateKey);
-      this.setData({ todos: processedTodos, expandedTodoId: null });
+      this.updateTodoData(processedTodos);
     } catch (e) {
       console.error('[Index] loadTodos error:', e);
     } finally {
@@ -112,29 +124,54 @@ Page({
     }
   },
 
+  updateTodoData(todos) {
+    const { activeFilter } = this.data;
+    let filteredTodos = todos;
+
+    // 根据筛选条件过滤
+    if (activeFilter === 'active') {
+      filteredTodos = todos.filter(t => !t.completed);
+    } else if (activeFilter === 'completed') {
+      filteredTodos = todos.filter(t => t.completed);
+    }
+
+    // 按优先级分组（重要性3为高优先级，1和2为普通优先级）
+    const highPriorityTodos = filteredTodos.filter(t => t.importance === 3);
+    const normalPriorityTodos = filteredTodos.filter(t => t.importance !== 3);
+
+    this.setData({
+      todos: todos,
+      filteredTodos: filteredTodos,
+      highPriorityTodos: highPriorityTodos,
+      normalPriorityTodos: normalPriorityTodos
+    });
+  },
+
   filterTodayTodos(todos, currentDateKey) {
     return (todos || []).filter(todo => {
       // 先判断是否在日期范围内
-      const inDateRange = todo.permanent 
+      const inDateRange = todo.permanent
         ? (todo.startDate <= currentDateKey)
         : (todo.startDate <= currentDateKey && todo.endDate >= currentDateKey);
-      
+
       if (!inDateRange) return false;
-      
+
       // 再判断是否显示
-      if (!todo.completed && !todo.abandoned) return true;
+      if (!todo.completed) return true;
       return todo.endDate === currentDateKey;
     });
   },
 
-  onToggleExpand(e) {
-    mixin.toggleExpand(this, e);
+  onFilterChange(e) {
+    const filter = e.currentTarget.dataset.filter;
+    this.setData({ activeFilter: filter });
+    this.updateTodoData(this.data.todos);
   },
 
   async onToggleTodo(e) {
     if (!auth.checkLogin()) return;
-    
-    const id = mixin.extractId(e, 'onToggleTodo');
+
+    const id = e.currentTarget.dataset.id;
     if (!id) return;
     e.stopPropagation && e.stopPropagation();
 
@@ -143,7 +180,9 @@ Page({
     wx.hideLoading();
 
     if (result !== null) {
-      wx.showToast({ title: '已完成', icon: 'success' });
+      wx.showToast({ title: result === 'done' ? '已完成' : '已取消', icon: 'success' });
+      // 更新本地缓存
+      todoCache.toggleCacheTodo(id, result);
       pageManager.setDataChangedPending();
       this.loadTodos(true);
     }
@@ -152,7 +191,7 @@ Page({
   onAbandonTodo(e) {
     if (!auth.checkLogin()) return;
     
-    const id = mixin.extractId(e, 'onAbandonTodo');
+    const id = e.currentTarget.dataset.id;
     if (!id) return;
     e.stopPropagation && e.stopPropagation();
 
@@ -164,7 +203,7 @@ Page({
 
   async onConfirmAbandon() {
     if (!auth.checkLogin()) return;
-    
+
     const id = this.data.abandonTodoId;
     if (!id) return;
 
@@ -174,6 +213,8 @@ Page({
 
     if (result) {
       wx.showToast({ title: '已放弃', icon: 'success' });
+      // 更新本地缓存
+      todoCache.abandonCacheTodo(id);
       pageManager.setDataChangedPending();
       this.loadTodos(true);
     }
@@ -201,9 +242,37 @@ Page({
     });
   },
 
-  onShowEditDialog(e) {
+  onViewTodo(e) {
     if (!auth.checkLogin()) return;
-    
+
+    const id = e.currentTarget.dataset.id;
+    const todo = this.data.todos.find(item => item._id === id);
+    if (!todo) return;
+
+    this.setData({
+      showViewDialog: true,
+      viewTitle: todo.title || '',
+      viewContent: todo.content || '',
+      viewEndDate: todo.endDate || '',
+      viewPermanent: todo.permanent || false,
+      viewPriority: todo.importance === 3 ? 'high' : 'normal'
+    });
+  },
+
+  onCloseView() {
+    this.setData({
+      showViewDialog: false,
+      viewTitle: '',
+      viewContent: '',
+      viewEndDate: '',
+      viewPermanent: false,
+      viewPriority: 'normal'
+    });
+  },
+
+  onEditTodo(e) {
+    if (!auth.checkLogin()) return;
+
     const id = e.currentTarget.dataset.id;
     const todo = this.data.todos.find(item => item._id === id);
     if (!todo) return;
@@ -212,22 +281,22 @@ Page({
       showEditDialog: true,
       editTitle: todo.title || '',
       editContent: todo.content || '',
-      editImportance: todo.importance || 2,
+      editPriority: todo.importance === 3 ? 'high' : 'normal',
       editingTodo: todo
     });
   },
 
-  onEditTitleInput(e) {
+  onPriorityChange(e) {
+    const value = e.currentTarget.dataset.value;
+    this.setData({ editPriority: value });
+  },
+
+  onEditTitleChange(e) {
     this.setData({ editTitle: e.detail.value });
   },
 
-  onEditContentInput(e) {
+  onEditContentChange(e) {
     this.setData({ editContent: e.detail.value });
-  },
-
-  onSelectImportance(e) {
-    const value = parseInt(e.currentTarget.dataset.value);
-    this.setData({ editImportance: value });
   },
 
   async onSaveEdit() {
@@ -238,7 +307,7 @@ Page({
 
     const title = this.data.editTitle.trim();
     if (!title) {
-      wx.showToast({ title: '请输入待办标题', icon: 'none' });
+      wx.showToast({ title: '请输入任务标题', icon: 'none' });
       return;
     }
 
@@ -247,7 +316,7 @@ Page({
       const result = await storage.updateTodo(todo._id, {
         title: title,
         content: this.data.editContent.trim(),
-        importance: this.data.editImportance
+        importance: this.data.editPriority === 'high' ? 3 : 2
       });
 
       if (result) {
@@ -264,7 +333,10 @@ Page({
       wx.hideLoading();
       this.setData({
         showEditDialog: false,
-        editingTodo: null
+        editingTodo: null,
+        editTitle: '',
+        editContent: '',
+        editPriority: 'normal'
       });
     }
   },
@@ -274,7 +346,7 @@ Page({
       showEditDialog: false,
       editTitle: '',
       editContent: '',
-      editImportance: 2,
+      editPriority: 'normal',
       editingTodo: null
     });
   }

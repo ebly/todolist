@@ -22,8 +22,7 @@ const addTodo = async (todoData, startDate, endDate) => {
     content: content ? content.trim() : '',
     importance: typeof todoData === 'object' ? (todoData.importance || 2) : 2,
     permanent: typeof todoData === 'object' ? (todoData.permanent || false) : false,
-    completed: false,
-    abandoned: false,
+    completed: '',
     startDate: startKey,
     endDate: endKey,
     createdAt: new Date()
@@ -42,23 +41,24 @@ const addTodo = async (todoData, startDate, endDate) => {
 const getTodosByDate = async (dateKey) => {
   try {
     const db = getDB();
-    
+    const _ = db.command;
+
     const res = await db.collection('todos').where(
-      db.command.or([
+      _.or([
         {
           permanent: true,
-          startDate: db.command.lte(dateKey)
+          startDate: _.lte(dateKey)
         },
         {
           permanent: false,
-          startDate: db.command.lte(dateKey),
-          endDate: db.command.gte(dateKey)
+          startDate: _.lte(dateKey),
+          endDate: _.gte(dateKey)
         }
       ])
     ).get();
-    
+
     return (res.data || []).filter(todo => {
-      if (!todo.completed && !todo.abandoned) return true;
+      if (!todo.completed) return true;
       return todo.endDate === dateKey;
     });
   } catch (e) {
@@ -77,21 +77,22 @@ const getTodosByMonth = async (year, month) => {
     const monthStart = `${year}-${monthStr}-01`;
     const monthEnd = `${year}-${monthStr}-31`;
     const db = getDB();
-    
+    const _ = db.command;
+
     const res = await db.collection('todos').where(
-      db.command.or([
+      _.or([
         {
           permanent: true,
-          startDate: db.command.lte(monthEnd)
+          startDate: _.lte(monthEnd)
         },
         {
           permanent: false,
-          startDate: db.command.lte(monthEnd),
-          endDate: db.command.gte(monthStart)
+          startDate: _.lte(monthEnd),
+          endDate: _.gte(monthStart)
         }
       ])
     ).get();
-    
+
     return res.data || [];
   } catch (e) {
     console.error('[Storage] getTodosByMonth error:', e);
@@ -105,16 +106,17 @@ const toggleTodo = async (id) => {
     const todo = await db.collection('todos').doc(id).get();
     if (!todo.data) return null;
 
-    const newCompleted = !todo.data.completed;
-    const updateData = { completed: newCompleted, abandoned: false };
-    
-    if (newCompleted) {
+    const isCompleted = todo.data.completed === 'done';
+    const newStatus = isCompleted ? '' : 'done';
+    const updateData = { completed: newStatus };
+
+    if (newStatus === 'done') {
       updateData.endDate = dateUtil.getTodayKey();
       updateData.permanent = false;
     }
-    
+
     await db.collection('todos').doc(id).update({ data: updateData });
-    return newCompleted;
+    return newStatus;
   } catch (e) {
     console.error('[Storage] toggleTodo error:', e);
     return null;
@@ -135,8 +137,7 @@ const abandonTodo = async (id) => {
   try {
     await getDB().collection('todos').doc(id).update({
       data: {
-        abandoned: true,
-        completed: false,
+        completed: 'abandoned',
         endDate: dateUtil.getTodayKey(),
         permanent: false
       }
@@ -211,6 +212,7 @@ const getAllTodos = async () => {
   try {
     const db = getDB();
     const { data: todos } = await db.collection('todos').get();
+    console.log('[Storage] 云端数据:', JSON.stringify(todos, null, 2));
     return todos || [];
   } catch (e) {
     console.error('[Storage] getAllTodos error:', e);

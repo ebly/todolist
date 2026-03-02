@@ -20,8 +20,8 @@ const TEXT = {
     logout: '退出登录',
 
     // 统计
-    statsTitle: '待办统计',
-    totalLabel: '总待办',
+    statsTitle: '任务统计',
+    totalLabel: '总任务',
     completedLabel: '已完成',
     pendingLabel: '进行中'
   },
@@ -30,7 +30,7 @@ const TEXT = {
   loginPopup: {
     appName: '叙程',
     title: '完善个人资料',
-    desc: '用于展示个人资料，同步你的待办数据',
+    desc: '用于展示个人资料，同步你的任务数据',
     avatarTip: '点击选择头像',
     nicknamePlaceholder: '请输入昵称',
     cancelBtn: '取消',
@@ -204,18 +204,18 @@ Page({
       tempUserInfo: null
     });
 
-    // 登录成功后立即获取所有待办并缓存
+    // 登录成功后立即获取所有任务并缓存
     wx.showLoading({ title: messages.loading });
     try {
       const allTodos = await storage.getAllTodos();
       todoCache.setCache(allTodos);
-      console.log('[Profile] 登录成功，已缓存所有待办数据');
+      console.log('[Profile] 登录成功，已缓存所有任务数据');
     } catch (e) {
-      console.error('[Profile] 缓存待办数据失败:', e);
+      console.error('[Profile] 缓存任务数据失败:', e);
     }
     wx.hideLoading();
 
-    // 刷新待办统计
+    // 刷新任务统计
     this.loadStats();
 
     // 清除登录刷新标记，因为已经缓存数据了
@@ -240,7 +240,7 @@ Page({
           // 清除登录信息
           auth.clearLoginInfo();
           
-          // 清除待办缓存
+          // 清除任务缓存
           todoCache.clearCache();
           
           this.setData({
@@ -271,9 +271,9 @@ Page({
       const cachedTodos = todoCache.getCache();
       
       if (cachedTodos) {
-        const validTodos = cachedTodos.filter(todo => !todo.abandoned);
-        const total = validTodos.length;
-        const completed = validTodos.filter(todo => todo.completed).length;
+        const validTodos = cachedTodos.filter(todo => !todo.completed);
+        const total = cachedTodos.length;
+        const completed = cachedTodos.filter(todo => todo.completed === 'done').length;
         const pending = total - completed;
         
         this.setData({
@@ -300,13 +300,13 @@ Page({
   },
 
   /**
-   * 清除所有待办（保留登录信息）
+   * 清除所有任务（保留登录信息）
    */
   async onClearAll() {
     const { text, buttons, messages } = this.data;
     const res = await wx.showModal({
       title: text.clearConfirmTitle || '确认清除',
-      content: '确定要清除所有待办数据吗？\n登录信息将保留，此操作不可恢复！',
+      content: '确定要清除所有任务数据吗？\n登录信息将保留，此操作不可恢复！',
       confirmText: buttons.confirm,
       confirmColor: '#ff4d4f'
     });
@@ -318,7 +318,7 @@ Page({
 
       if (result) {
         wx.showToast({
-          title: '已清除所有待办',
+          title: '已清除所有任务',
           icon: 'success'
         });
         this.loadStats();
@@ -337,7 +337,7 @@ Page({
   onAbout() {
     wx.showModal({
       title: '关于',
-      content: '叙程 - 您的每日待办助手\n\n版本：1.0.0',
+      content: '叙程 - 您的每日任务助手\n\n版本：1.0.0',
       showCancel: false
     });
   },

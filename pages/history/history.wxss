@@ -165,15 +165,6 @@
   font-weight: 600;
 }
 
-.selected-date-section {
-  flex: 1;
-  overflow-y: auto;
-}
-
-.selected-todos {
-  flex: 1;
-}
-
 .empty-tip {
   text-align: center;
   color: #969799;
@@ -182,63 +173,106 @@
 
 /* ==================== 待办列表样式 ==================== */
 
-.todo-list {
+/* ==================== 待办卡片列表 ==================== */
+.todo-cards {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 0 16px;
+}
+
+.todo-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 10px;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .todo-card {
   display: flex;
-  background-color: #e8f8ef;
-  border-radius: 6px 0 0 6px;
-  overflow: hidden;
-  min-height: 50px;
-  gap: 10px;
-}
-
-.todo-card-left-bar {
-  width: 6px;
-  background-color: #13EC5B;
-  flex-shrink: 0;
-}
-
-.todo-card-content {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  padding: 8px 8px 8px 0;
+  align-items: flex-start;
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 16px;
   gap: 12px;
 }
 
-.todo-info {
+/* ==================== 待办内容 ==================== */
+.todo-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+}
+
+.todo-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .todo-title {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 500;
   color: #323233;
+  line-height: 1.4;
 }
 
 .todo-title-completed {
-  color: #07c160;
+  color: #969799;
   text-decoration: line-through;
+}
+
+.priority-tag {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.priority-tag-high {
+  background-color: #ff4d4f;
+}
+
+.priority-tag-normal {
+  background-color: #13EC5B;
+}
+
+.tag-group {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.status-tag {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.status-active {
+  background-color: #1989fa;
+}
+
+.status-completed {
+  background-color: #13EC5B;
+}
+
+.status-abandoned {
+  background-color: #969799;
 }
 
 .todo-desc {
   font-size: 13px;
   color: #969799;
-}
-
-.todo-time {
-  font-size: 14px;
-  color: #969799;
-  flex-shrink: 0;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 200px;
 }
 
 /* ==================== 对话框样式 ==================== */
@@ -248,19 +282,19 @@
 }
 
 .dialog-field {
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .dialog-field-row {
   display: flex;
   align-items: center;
   flex-wrap: nowrap;
+  gap: 10px;
 }
 
 .dialog-label {
   font-size: 14px;
   color: #323233;
-  min-width: 40px;
 }
 
 .dialog-label + .dialog-label {
@@ -279,7 +313,6 @@
   border: 1px solid #ebedf0;
   border-radius: 4px;
   background-color: #ffffff;
-  min-width: 200px;
 }
 
 .dialog-textarea {
@@ -304,9 +337,41 @@
   white-space: nowrap;
 }
 
-/* switch 样式调整 */
-.dialog-field switch {
-  margin-left: 8px;
+.dialog-text {
+  font-size: 14px;
+  color: #323233;
+  padding: 8px 0;
+  line-height: 1.5;
+  flex: 1;
+}
+
+/* 优先级选项 */
+.priority-options {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.priority-option {
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #646566;
+  background-color: #f5f5f5;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.priority-option.active {
+  color: #ffffff;
+}
+
+.priority-option.active.high {
+  background-color: #ff4d4f;
+}
+
+.priority-option.active.normal {
+  background-color: #13EC5B;
 }
 
 /* 滑动删除样式 */

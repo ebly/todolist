@@ -28,9 +28,9 @@ const getDaysDiff = (date1, date2) => {
 const processTodosWithProgress = (todos, currentDateKey) => {
   return todos.map(todo => {
     const { daysLeft, daysTotal, progressPercent, daysLeftText, ...restTodo } = todo;
-    
+
     // 已完成或已放弃的待办不计算进度
-    if (restTodo.completed || restTodo.abandoned) {
+    if (restTodo.completed) {
       return restTodo;
     }
     
@@ -176,12 +176,11 @@ const loadTodosForDate = (dateKey, allTodos = null) => {
     return false;
   }).filter(todo => {
     // 已完成或放弃的待办，只在 endDate 当天显示
-    if (!todo.completed && !todo.abandoned) return true;
+    if (!todo.completed) return true;
     return todo.endDate === dateKey;
   }).sort((a, b) => {
     // 按重要性降序，未完成的在前
     if (a.completed !== b.completed) return a.completed ? 1 : -1;
-    if (a.abandoned !== b.abandoned) return a.abandoned ? 1 : -1;
     return b.importance - a.importance;
   });
 };

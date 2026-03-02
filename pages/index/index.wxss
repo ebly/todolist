@@ -1,253 +1,169 @@
-/* ==================== 公共样式 ==================== */
+/* ==================== 页面容器 ==================== */
+.page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
 
-/* 空状态提示 */
+/* ==================== 筛选标签 ==================== */
+.filter-tabs {
+  display: flex;
+  padding: 12px 16px 0px 16px;
+  gap: 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.filter-tab {
+  font-size: 13px;
+  color: #969799;
+  padding-bottom: 8px;
+  position: relative;
+}
+
+.filter-tab.active {
+  color: #323233;
+  font-weight: 500;
+}
+
+.filter-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background-color: #07c160;
+}
+
+/* ==================== 列表容器 ==================== */
+.list-container {
+  flex: 1;
+}
+
+/* ==================== 空状态 ==================== */
 .empty-tip {
   text-align: center;
   color: #969799;
-  padding: 40px 0;
-}
-
-/* 操作按钮 */
-.action-btn {
-  width: 60px;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #ffffff;
+  padding: 60px 0;
   font-size: 14px;
 }
 
-.action-btn-edit {
-  background-color: #1989fa;
+/* ==================== 优先级分组 ==================== */
+.priority-section {
+  padding: 10px;
 }
 
-.action-btn-delete {
+.priority-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #646566;
+  margin-bottom: 12px;
+}
+
+.priority-indicator {
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+}
+
+.priority-indicator.priority-high {
   background-color: #ff4d4f;
 }
 
-/* 优先级条 */
-.importance-bar {
-  width: 4px;
-  height: 24px;
-  border-radius: 2px;
-  margin-right: 12px;
-  flex-shrink: 0;
+.priority-indicator.priority-normal {
+  background-color: #13EC5B;
 }
 
-.importance-bar-low {
-  background-color: #ffb300;
+/* ==================== 待办卡片列表 ==================== */
+.todo-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.importance-bar-medium {
-  background-color: #f57c00;
+.todo-card {
+  display: flex;
+  align-items: flex-start;
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 16px;
+  gap: 12px;
 }
 
-.importance-bar-high {
-  background-color: #d32f2f;
+.todo-card-completed {
+  opacity: 0.7;
 }
 
-/* 待办标题 */
-.todo-title {
-  color: #323233;
-}
-
-.todo-title-completed {
-  color: #07c160;
-  text-decoration: line-through;
-}
-
-.todo-title-abandoned {
-  color: #969799;
-  text-decoration: line-through;
-}
-
-/* 展开箭头 */
-.expand-arrow {
-  font-size: 12px;
-  color: #969799;
-  transition: transform 0.3s ease;
-  margin-left: 8px;
-}
-
-.expand-arrow-expanded {
-  transform: rotate(180deg);
-}
-
-/* 展开内容区域 */
-.collapse-content {
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
-  background-color: #f7f8f9;
-  padding: 0 16px;
-}
-
-.collapse-content-expanded {
-  max-height: 500px;
-  padding: 12px 16px;
-  opacity: 1;
-}
-
-/* 详情文字 */
-.detail-text {
-  font-size: 14px;
-  color: #323233;
-  line-height: 1.5;
-}
-
-.detail-text-empty {
-  color: #969799;
-}
-
-/* 状态标签 */
-.status-tag {
-  font-size: 12px;
-  color: #07c160;
-  margin-left: 8px;
-  padding: 2px 6px;
-  background-color: #e6f7ed;
+/* ==================== 复选框 ==================== */
+.todo-checkbox {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #c8c9cc;
   border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 2px;
 }
 
-.status-tag-abandoned {
-  color: #969799;
-  background-color: #ebedf0;
+.todo-checkbox.checked {
+  background-color: #07c160;
+  border-color: #07c160;
 }
 
-/* ==================== 页面特定样式 ==================== */
-
-/* 导航栏按钮 */
-.clear-btn {
-  font-size: 14px;
-  color: #ff4d4f;
-  padding: 8px 12px;
+.check-icon {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: bold;
 }
 
-/* ==================== 待办列表样式 ==================== */
-
-.todo-collapse-list {
+/* ==================== 待办内容 ==================== */
+.todo-content {
+  flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-.todo-wrapper {
-  background-color: transparent;
-}
-
-.todo-wrapper.has-border {
-  border-bottom: 1px solid #ebedf0;
-}
-
-.todo-header {
-  flex: 1;
-}
-
-.todo-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.expand-arrow {
-  font-size: 12px;
-  color: #969799;
-  transition: transform 0.3s ease;
-  margin-left: 8px;
-  text-decoration: none !important;
-  display: flex;
-  align-items: center;
-  height: 100%;
-}
-
-.expand-arrow.expanded {
-  transform: rotate(180deg);
-}
-
-.todo-collapse-content {
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  transition: max-height 0.3s ease, padding 0.3s ease, opacity 0.3s ease;
-  background-color: #f7f8f9;
-  padding: 0 16px;
-}
-
-.todo-collapse-content.expanded {
-  max-height: 500px;
-  padding: 12px 16px;
-  opacity: 1;
-}
-
-.todo-detail {
-  font-size: 14px;
-  color: #323233;
-  line-height: 1.5;
-}
-
-.todo-detail.empty {
-  color: #969799;
-}
-
-.todo-item {
-  display: flex;
-  align-items: center;
-  background-color: transparent;
-  height: 48px;
-  padding: 0 12px;
-}
-
-.importance-bar {
-  width: 4px;
-  height: 24px;
-  border-radius: 2px;
-  margin-right: 12px;
-  flex-shrink: 0;
-}
-
-.importance-bar.importance-1 {
-  background-color: #ffb300;
-}
-
-.importance-bar.importance-2 {
-  background-color: #f57c00;
-}
-
-.importance-bar.importance-3 {
-  background-color: #d32f2f;
-}
-
 .todo-title {
+  font-size: 16px;
+  font-weight: 500;
   color: #323233;
+  line-height: 1.4;
 }
 
 .todo-title-completed {
-  color: #07c160;
-  text-decoration: line-through;
-}
-
-/* 放弃的待办样式 */
-.todo-title-abandoned {
   color: #969799;
   text-decoration: line-through;
 }
 
-/* 状态标签 */
-.todo-status {
+.todo-desc {
+  font-size: 13px;
+  color: #969799;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 200px;
+}
+
+.todo-meta {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.todo-time {
   font-size: 12px;
-  color: #07c160;
-  margin-left: 8px;
-  padding: 2px 6px;
-  background-color: #e6f7ed;
+  color: #ff4d4f;
+  background-color: #fff1f0;
+  padding: 2px 8px;
   border-radius: 4px;
 }
 
-.todo-status.abandoned {
-  color: #969799;
-  background-color: #ebedf0;
-}
-
+/* ==================== 滑动操作按钮 ==================== */
 .swipe-right-actions {
   display: flex;
   align-items: center;
@@ -264,116 +180,92 @@
   font-size: 14px;
 }
 
-.swipe-right-actions .action-btn.edit {
-  background-color: #1989fa;
+.action-btn-abandon {
+  background-color: #969799;
+  border-radius: 0 6px 6px 0;
 }
 
-.swipe-right-actions .action-btn.delete {
+/* ==================== 优先级空状态 ==================== */
+.priority-empty {
+  text-align: center;
+  padding: 20px;
+  font-size: 14px;
+  color: #969799;
+}
+
+/* ==================== 编辑对话框 ==================== */
+.edit-dialog {
+  padding: 16px;
+}
+
+.dialog-field {
+  margin-bottom: 8px;
+}
+
+.dialog-field-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 10px;
+}
+
+.dialog-label {
+  font-size: 14px;
+  color: #323233;
+}
+
+.dialog-input {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #ebedf0;
+  border-radius: 4px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.dialog-textarea {
+  width: 100%;
+  height: 80px;
+  padding: 8px 12px;
+  border: 1px solid #ebedf0;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.dialog-text {
+  font-size: 14px;
+  color: #323233;
+  padding: 8px 0;
+  line-height: 1.5;
+  flex: 1;
+}
+
+/* ==================== 优先级选项 ==================== */
+.priority-options {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.priority-option {
+  padding: 8px 20px;
+  border-radius: 4px;
+  font-size: 14px;
+  color: #646566;
+  background-color: #f5f5f5;
+  border: none;
+  transition: all 0.3s ease;
+}
+
+.priority-option.active {
+  color: #ffffff;
+}
+
+.priority-option.active.high {
   background-color: #ff4d4f;
 }
 
-/* ==================== 进度条和剩余天数样式 ==================== */
-
-.todo-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  position: relative;
-  overflow: hidden;
-  border-radius: 8rpx;
-  padding: 12rpx 16rpx;
-  min-height: 48px;
-}
-
-/* 背景进度条 */
-.todo-bg-progress {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 24px;
-  transform: translateY(-50%);
-  background-color: #f5f5f5;
-  border-radius: 2px;
-  overflow: hidden;
-  z-index: 0;
-}
-
-.todo-bg-progress-fill {
-  height: 100%;
-  opacity: 1;
-  transition: width 0.3s ease;
-}
-
-/* 低重要性 - 黄色 */
-.todo-bg-progress-fill.importance-low {
-  background-color: #ffb300;
-}
-
-/* 中重要性 - 橙色 */
-.todo-bg-progress-fill.importance-medium {
-  background-color: #f57c00;
-}
-
-/* 高重要性 - 红色 */
-.todo-bg-progress-fill.importance-high {
-  background-color: #d32f2f;
-}
-
-/* 待办标题 - 垂直居中 */
-.todo-header-center {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 24px;
-  gap: 16rpx;
-}
-
-.todo-header-center .todo-title {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.todo-right-section {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  flex-shrink: 0;
-}
-
-/* 天数标签 */
-.days-badge {
-  font-size: 20rpx;
-  padding: 4rpx 12rpx;
-  border-radius: 8rpx;
-  font-weight: 500;
-  white-space: nowrap;
-  flex-shrink: 0;
-  background-color: #e6f7ed;
-  color: #07c160;
-}
-
-.days-badge.urgent {
-  background-color: #fff1f0;
-  color: #ff4d4f;
-}
-
-.days-badge.warning {
-  background-color: #fff7e6;
-  color: #ff8c00;
-}
-
-.days-badge.completed {
-  background-color: #e6f7ed;
-  color: #07c160;
-}
-
-.days-badge.abandoned {
-  background-color: #f5f5f5;
-  color: #969799;
+.priority-option.active.normal {
+  background-color: #13EC5B;
 }

@@ -92,7 +92,8 @@ const checkRefreshNeeded = () => {
   if (needRefresh) {
     console.log('[PageManager] 需要刷新，原因:', reasons);
   } else {
-    console.log('[PageManager] 使用缓存数据');
+    const cachedData = todoCache.getCache();
+    console.log('[PageManager] 使用缓存数据:', JSON.stringify(cachedData, null, 2));
   }
 
   return {

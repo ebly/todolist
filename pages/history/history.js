@@ -10,7 +10,17 @@ const DEFAULT_DIALOG_DATA = {
   editContent: '',
   editStartDate: '',
   editDate: '',
-  editPermanent: false
+  editPermanent: false,
+  editPriority: 'normal'
+};
+
+const DEFAULT_VIEW_DATA = {
+  showViewDialog: false,
+  viewTitle: '',
+  viewContent: '',
+  viewEndDate: '',
+  viewPermanent: false,
+  viewPriority: 'normal'
 };
 
 Page({
@@ -32,7 +42,8 @@ Page({
     showDeleteDialog: false,
     deleteTodoId: '',
     initialized: false,
-    ...DEFAULT_DIALOG_DATA
+    ...DEFAULT_DIALOG_DATA,
+    ...DEFAULT_VIEW_DATA
   },
 
   onLoad() {
@@ -79,6 +90,8 @@ Page({
   },
 
   async loadMonthData(year, month, forceRefresh = false) {
+    console.log('[History] loadMonthData - year:', year, 'month:', month, 'forceRefresh:', forceRefresh);
+    
     if (!auth.checkLogin()) {
       this.setData({ 
         monthTodos: {}, 
@@ -92,34 +105,40 @@ Page({
 
     if (!forceRefresh) {
       const cachedTodos = todoCache.getCache();
+      console.log('[History] 尝试使用缓存，缓存是否存在:', !!cachedTodos, '缓存数量:', cachedTodos ? cachedTodos.length : 0);
       if (cachedTodos) {
+        console.log('[History] 使用缓存数据:', JSON.stringify(cachedTodos, null, 2));
         const monthTodos = this.filterMonthTodos(cachedTodos, year, month);
+        console.log('[History] 过滤后月份任务数量:', monthTodos.length);
         const dateStats = this.calculateDateStats(monthTodos);
         const groupedTodos = this.groupTodosByDate(monthTodos);
-        this.setData({ 
-          monthTodos: groupedTodos, 
-          dateStats, 
-          allMonthTodos: monthTodos 
+        this.setData({
+          monthTodos: groupedTodos,
+          dateStats,
+          allMonthTodos: monthTodos
         });
         this.renderCalendar();
         this.loadTodosForDate(this.data.selectedDate);
+        // 同时更新任务列表数据
+        this.updateIndexPageTodos(cachedTodos);
         return;
       }
     }
 
     wx.showLoading({ title: '加载中' });
+    let allTodos = [];
     try {
       console.log('[History] 从后台获取数据');
-      const allTodos = await storage.getAllTodos();
-      
+      allTodos = await storage.getAllTodos();
+
       todoCache.setCache(allTodos);
       pageManager.clearLoginRefreshPending();
       pageManager.clearDataChangedPending();
-      
+
       const monthTodos = this.filterMonthTodos(allTodos, year, month);
       const dateStats = this.calculateDateStats(monthTodos);
       const groupedTodos = this.groupTodosByDate(monthTodos);
-      
+
       this.setData({ monthTodos: groupedTodos, dateStats, allMonthTodos: monthTodos });
     } catch (e) {
       console.error('loadMonthData error:', e);
@@ -127,14 +146,35 @@ Page({
     } finally {
       this.renderCalendar();
       this.loadTodosForDate(this.data.selectedDate);
+      // 同时更新任务列表数据
+      this.updateIndexPageTodos(allTodos);
       wx.hideLoading();
+    }
+  },
+
+  updateIndexPageTodos(todos) {
+    // 获取当前页面栈
+    const pages = getCurrentPages();
+    // 查找任务页面 (index页面)
+    const indexPage = pages.find(p => p.route === 'pages/index/index');
+    if (indexPage && indexPage.updateTodoData) {
+      console.log('[History] 更新任务页面数据');
+      indexPage.updateTodoData(todos);
     }
   },
 
   filterMonthTodos(todos, year, month) {
     const monthStr = `${year}-${String(month).padStart(2, '0')}`;
     return (todos || []).filter(todo => {
-      return todo.startDate.startsWith(monthStr) || todo.endDate.startsWith(monthStr);
+      // 任务在月份范围内，如果开始日期或结束日期在该月份内
+      const startInMonth = todo.startDate.startsWith(monthStr);
+      const endInMonth = todo.endDate.startsWith(monthStr);
+      // 或者任务跨越了该月份（开始日期在月份前，结束日期在月份后）
+      const monthStart = `${monthStr}-01`;
+      const monthEnd = `${monthStr}-31`;
+      const spansMonth = todo.startDate <= monthStart && todo.endDate >= monthEnd;
+      
+      return startInMonth || endInMonth || spansMonth;
     });
   },
 
@@ -171,27 +211,64 @@ Page({
   loadTodosForDate(dateKey) {
     const { allMonthTodos } = this.data;
     
+    console.log('[History] loadTodosForDate - dateKey:', dateKey, 'allMonthTodos数量:', allMonthTodos.length);
+    console.log('[History] allMonthTodos数据:', JSON.stringify(allMonthTodos, null, 2));
+
     const todos = (allMonthTodos || []).filter(todo => {
-      if (todo.completed || todo.abandoned) {
-        return todo.endDate === dateKey;
-      }
-      if (todo.permanent) {
-        return dateKey >= todo.startDate;
-      }
-      return dateKey >= todo.startDate && dateKey <= todo.endDate;
+      // 判断任务是否在日期范围内
+      const inDateRange = todo.permanent
+        ? (dateKey >= todo.startDate)
+        : (dateKey >= todo.startDate && dateKey <= todo.endDate);
+      
+      console.log('[History] 检查任务:', todo.title, 'completed:', todo.completed, 'inDateRange:', inDateRange);
+      
+      // 任务在日期范围内就显示
+      return inDateRange;
     });
-    
+
+    console.log('[History] 过滤后任务数量:', todos.length);
     this.setData({ selectedDateTodos: todos, expandedTodoId: null });
   },
 
   onSelectDate(e) {
     const dateKey = e.currentTarget.dataset.datekey;
+    console.log('[History] onSelectDate - 点击日期:', dateKey);
     if (!dateKey) return;
-    
+
     const day = parseInt(dateKey.split('-')[2]);
-    
+    const clickedMonth = parseInt(dateKey.split('-')[1]);
+    const clickedYear = parseInt(dateKey.split('-')[0]);
+    const { currentYear, currentMonth } = this.data;
+
+    console.log('[History] 当前显示月份:', currentYear, currentMonth, '点击月份:', clickedYear, clickedMonth);
+
     this.setData({ selectedDate: dateKey, selectedDateDay: day });
-    this.loadTodosForDate(dateKey);
+
+    // 如果点击的是当前显示的月份，直接从缓存加载
+    if (clickedYear === currentYear && clickedMonth === currentMonth) {
+      console.log('[History] 点击当前月份，从缓存加载');
+      this.loadTodosForDate(dateKey);
+    } else {
+      // 点击其他月份，需要加载那个月份的数据
+      console.log('[History] 点击其他月份，切换月份');
+      this.changeMonthTo(clickedYear, clickedMonth, dateKey);
+    }
+  },
+
+  changeMonthTo(targetYear, targetMonth, selectedDate) {
+    const day = parseInt(selectedDate.split('-')[2]);
+    console.log('[History] changeMonthTo - 切换到:', targetYear, targetMonth, '选中日期:', selectedDate);
+
+    this.setData({
+      currentYear: targetYear,
+      currentMonth: targetMonth,
+      selectedDate: selectedDate,
+      selectedDateDay: day
+    });
+
+    // 从缓存加载，不强制刷新
+    console.log('[History] 调用loadMonthData，forceRefresh=false');
+    this.loadMonthData(targetYear, targetMonth, false);
   },
 
   getTargetDate(targetYear, targetMonth, currentSelectedDate) {
@@ -277,32 +354,73 @@ Page({
     this.setData({ showDeleteDialog: false, deleteTodoId: '' });
   },
 
+  onViewTodo(e) {
+    if (!auth.checkLogin()) return;
+
+    const id = mixin.extractId(e, 'onViewTodo');
+    if (!id) return;
+    e.stopPropagation && e.stopPropagation();
+
+    const { selectedDateTodos } = this.data;
+    const todo = selectedDateTodos.find(t => t._id === id);
+
+    if (!todo) {
+      wx.showToast({ title: '未找到任务', icon: 'none' });
+      return;
+    }
+
+    this.setData({
+      showViewDialog: true,
+      viewTitle: todo.title || '',
+      viewContent: todo.content || '',
+      viewEndDate: todo.endDate || '',
+      viewPermanent: todo.permanent || false,
+      viewPriority: todo.importance === 3 ? 'high' : 'normal'
+    });
+  },
+
+  onCloseView() {
+    this.setData({
+      showViewDialog: false,
+      viewTitle: '',
+      viewContent: '',
+      viewEndDate: '',
+      viewPermanent: false,
+      viewPriority: 'normal'
+    });
+  },
+
   onEditTodo(e) {
     if (!auth.checkLogin()) return;
-    
+
     const id = mixin.extractId(e, 'onEditTodo');
     if (!id) return;
     e.stopPropagation && e.stopPropagation();
-    
+
     const { selectedDateTodos, selectedDate } = this.data;
     const todo = selectedDateTodos.find(t => t._id === id);
-    
+
     if (!todo) {
-      wx.showToast({ title: '未找到待办事项', icon: 'none' });
+      wx.showToast({ title: '未找到任务', icon: 'none' });
       return;
     }
-    
+
     this.setData({
       editingTodo: todo,
       showEditDialog: true,
       showAddDialog: false,
       editContent: todo.content || '',
       editTitle: todo.title || '',
-
+      editPriority: todo.importance === 3 ? 'high' : 'normal',
       editStartDate: todo.startDate || selectedDate,
       editDate: selectedDate,
       editPermanent: todo.permanent || false
     });
+  },
+
+  onPriorityChange(e) {
+    const value = e.currentTarget.dataset.value;
+    this.setData({ editPriority: value });
   },
 
   onShowAddDialog() {
@@ -314,13 +432,13 @@ Page({
     const { selectedDate, todayDateKey, monthTodos } = this.data;
     
     if (selectedDate < todayDateKey) {
-      wx.showToast({ title: '该日期已过期，无法添加待办', icon: 'none', duration: 2000 });
+      wx.showToast({ title: '该日期已过期，无法添加任务', icon: 'none', duration: 2000 });
       return;
     }
     
     const dayTodos = monthTodos[selectedDate] || [];
     if (dayTodos.length >= 10) {
-      wx.showToast({ title: '该日期待办已满（最多10个）', icon: 'none', duration: 2000 });
+      wx.showToast({ title: '该日期任务已满（最多10个）', icon: 'none', duration: 2000 });
       return;
     }
     
@@ -346,7 +464,16 @@ Page({
     this.closeDialog();
   },
 
-  onStopPropagation() {},
+  onStopPropagation(e) {
+    // 阻止事件冒泡，但避免在滚动时触发错误
+    if (e && e.stopPropagation) {
+      try {
+        e.stopPropagation();
+      } catch (err) {
+        // 忽略 cancelable=false 时的错误
+      }
+    }
+  },
 
   onEditTitleChange(e) {
     this.setData({ editTitle: e.detail.value });
@@ -366,10 +493,10 @@ Page({
 
   async onSaveEdit() {
     if (!auth.checkLogin()) return;
-    
-    const { editingTodo, editContent, selectedDate, showAddDialog, editTitle, editDate, editStartDate, editPermanent } = this.data;
+
+    const { editingTodo, editContent, selectedDate, showAddDialog, editTitle, editDate, editStartDate, editPermanent, editPriority } = this.data;
     const newTitle = editTitle ? editTitle.trim() : '';
-    
+
     if (!newTitle) {
       wx.showToast({ title: '请输入标题', icon: 'none' });
       return;
@@ -383,11 +510,12 @@ Page({
       const todoData = {
         title: newTitle,
         content: editContent ? editContent.trim() : '',
-        permanent: editPermanent
+        permanent: editPermanent,
+        importance: editPriority === 'high' ? 3 : 2
       };
 
       let result;
-      
+
       if (showAddDialog) {
         result = await storage.addTodo(todoData, startDate, endDate);
         if (result) wx.showToast({ title: '添加成功', icon: 'success' });
@@ -425,7 +553,7 @@ Page({
 
     const res = await wx.showModal({
       title: '确认删除',
-      content: '确定要删除这条待办吗？',
+      content: '确定要删除这条任务吗？',
       confirmText: '删除',
       confirmColor: '#ff4d4f'
     });
@@ -450,7 +578,7 @@ Page({
     
     const res = await wx.showModal({
       title: '确认清除',
-      content: '确定要清除所有待办数据吗？此操作不可恢复！',
+      content: '确定要清除所有任务数据吗？此操作不可恢复！',
       confirmText: '清除',
       confirmColor: '#ff4d4f'
     });

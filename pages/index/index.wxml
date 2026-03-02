@@ -1,40 +1,68 @@
 <view class="page-container">
+  <!-- 筛选标签 -->
+  <view class="filter-tabs">
+    <view class="filter-tab {{activeFilter === 'all' ? 'active' : ''}}" bindtap="onFilterChange" data-filter="all">全部 ({{todos.length}})</view>
+    <view class="filter-tab {{activeFilter === 'active' ? 'active' : ''}}" bindtap="onFilterChange" data-filter="active">进行中</view>
+    <view class="filter-tab {{activeFilter === 'completed' ? 'active' : ''}}" bindtap="onFilterChange" data-filter="completed">已完成</view>
+  </view>
+
   <scroll-view class="list-container" scroll-y enable-flex>
     <!-- 空状态 -->
-    <view class="empty-tip" wx:if="{{!todos || todos.length === 0}}">暂无待办事项</view>
+    <view class="empty-tip" wx:if="{{!filteredTodos || filteredTodos.length === 0}}">暂无任务</view>
 
-    <view class="todo-collapse-list" wx:if="{{todos && todos.length > 0}}">
-      <view class="todo-wrapper {{idx !== todos.length - 1 ? 'todo-wrapper-has-border' : ''}}" wx:for="{{todos}}" wx:for-index="idx" wx:key="_id">
-        <van-swipe-cell right-width="{{item.completed || item.abandoned ? 0 : 120}}" disabled="{{item.completed || item.abandoned}}" data-id="{{item._id}}">
-          <view class="todo-item-base" bindtap="onToggleExpand" data-id="{{item._id}}">
-            <view class="importance-bar importance-bar-{{item.importance === 1 ? 'low' : item.importance === 3 ? 'high' : 'medium'}}"></view>
-            <view class="todo-content">
-              <view class="todo-bg-progress" wx:if="{{!item.completed && !item.abandoned}}">
-                <view class="todo-bg-progress-fill importance-{{item.importance === 1 ? 'low' : item.importance === 3 ? 'high' : 'medium'}}" style="width: {{item.progressPercent}}%;"></view>
+    <view class="todo-list" wx:if="{{filteredTodos && filteredTodos.length > 0}}">
+      <!-- 高优先级分组 -->
+      <view class="priority-section">
+        <view class="priority-label">
+          <view class="priority-indicator priority-high"></view>
+          <text>重要</text>
+        </view>
+        <view class="todo-cards" wx:if="{{highPriorityTodos.length > 0}}">
+          <van-swipe-cell right-width="{{item.completed ? 0 : 60}}" disabled="{{item.completed}}" wx:for="{{highPriorityTodos}}" wx:key="_id" data-id="{{item._id}}">
+            <view class="todo-card {{item.completed ? 'todo-card-completed' : ''}}">
+              <view class="todo-checkbox {{item.completed ? 'checked' : ''}}" bindtap="onToggleTodo" data-id="{{item._id}}">
+                <text wx:if="{{item.completed}}" class="check-icon">{{item.completed === 'abandoned' ? '✕' : '✓'}}</text>
               </view>
-              <view class="todo-header-center">
-                <text class="todo-title {{item.completed ? 'todo-title-completed' : ''}} {{item.abandoned ? 'todo-title-abandoned' : ''}}">{{item.title}}</text>
-                <view class="todo-right-section">
-                  <text class="days-badge {{item.daysLeft <= 1 ? 'urgent' : item.daysLeft <= 3 ? 'warning' : ''}}" wx:if="{{!item.completed && !item.abandoned}}">{{item.daysLeftText}}</text>
-                  <text class="days-badge completed" wx:if="{{item.completed}}">已完成</text>
-                  <text class="days-badge abandoned" wx:if="{{item.abandoned}}">已放弃</text>
-                  <view class="expand-arrow {{expandedTodoId === item._id ? 'expand-arrow-expanded' : ''}}">▼</view>
+              <view class="todo-content" bindtap="onViewTodo" data-id="{{item._id}}">
+                <text class="todo-title {{item.completed ? 'todo-title-completed' : ''}}">{{item.title}}</text>
+                <text class="todo-desc" wx:if="{{item.content}}">{{item.content}}</text>
+                <view class="todo-meta">
+                  <text class="todo-time" wx:if="{{item.time}}">{{item.time}}</text>
                 </view>
               </view>
             </view>
-          </view>
-          <view slot="right" class="swipe-right-actions" data-id="{{item._id}}">
-            <view class="action-btn action-btn-edit" catchtap="onToggleTodo" data-id="{{item._id}}">完成</view>
-            <view class="action-btn action-btn-delete" catchtap="onAbandonTodo" data-id="{{item._id}}">放弃</view>
-          </view>
-        </van-swipe-cell>
-        <view class="collapse-content {{expandedTodoId === item._id ? 'collapse-content-expanded' : ''}}">
-          <view class="detail-text" wx:if="{{item.content}}">
-            <text>{{item.content}}</text>
-          </view>
-          <view class="detail-text detail-text-empty" wx:else>
-            <text>暂无详细内容</text>
-          </view>
+            <view slot="right" class="swipe-right-actions">
+              <view class="action-btn action-btn-abandon" catchtap="onAbandonTodo" data-id="{{item._id}}">放弃</view>
+            </view>
+          </van-swipe-cell>
+        </view>
+        <view class="priority-empty" wx:if="{{highPriorityTodos.length === 0}}">暂无数据</view>
+      </view>
+
+      <!-- 普通优先级分组 -->
+      <view class="priority-section" wx:if="{{normalPriorityTodos.length > 0}}">
+        <view class="priority-label">
+          <view class="priority-indicator priority-normal"></view>
+          <text>普通</text>
+        </view>
+        <view class="todo-cards">
+          <van-swipe-cell right-width="{{item.completed ? 0 : 60}}" disabled="{{item.completed}}" wx:for="{{normalPriorityTodos}}" wx:key="_id" data-id="{{item._id}}">
+            <view class="todo-card {{item.completed ? 'todo-card-completed' : ''}}">
+              <view class="todo-checkbox {{item.completed ? 'checked' : ''}}" bindtap="onToggleTodo" data-id="{{item._id}}">
+                <text wx:if="{{item.completed}}" class="check-icon">{{item.completed === 'abandoned' ? '✕' : '✓'}}</text>
+              </view>
+              <view class="todo-content" bindtap="onViewTodo" data-id="{{item._id}}">
+                <text class="todo-title {{item.completed ? 'todo-title-completed' : ''}}">{{item.title}}</text>
+                <text class="todo-desc" wx:if="{{item.content}}">{{item.content}}</text>
+                <view class="todo-meta">
+                  <text class="todo-time" wx:if="{{item.time}}">{{item.time}}</text>
+                </view>
+              </view>
+            </view>
+            <view slot="right" class="swipe-right-actions">
+              <view class="action-btn action-btn-abandon" catchtap="onAbandonTodo" data-id="{{item._id}}">放弃</view>
+            </view>
+          </van-swipe-cell>
         </view>
       </view>
     </view>
@@ -43,7 +71,7 @@
   <!-- 放弃确认对话框 -->
   <van-dialog
     title="确认放弃"
-    message="确定要放弃这条待办吗？"
+    message="确定要放弃这条任务吗？"
     show="{{showAbandonDialog}}"
     show-cancel-button
     bind:confirm="onConfirmAbandon"
@@ -52,10 +80,49 @@
     cancel-button-text="取消"
     confirm-button-color="#ff4d4f" />
 
+  <!-- 查看对话框 -->
+  <van-dialog
+    use-slot
+    title="查看"
+    show="{{showViewDialog}}"
+    bind:confirm="onCloseView"
+    confirm-button-text="确认"
+    confirm-button-color="#1989fa">
+    <view class="edit-dialog">
+      <view class="dialog-field">
+        <view class="dialog-field-row">
+          <text class="dialog-label">标题</text>
+          <view class="dialog-text">{{viewTitle}}</view>
+        </view>
+      </view>
+      <view class="dialog-field">
+        <text class="dialog-label">内容</text>
+        <view class="dialog-text">{{viewContent || '无'}}</view>
+      </view>
+      <view class="dialog-field">
+        <view class="dialog-field-row">
+          <text class="dialog-label">截至</text>
+          <view class="dialog-text">{{viewEndDate || '无'}}</view>
+          <text class="dialog-label">不限</text>
+          <switch checked="{{viewPermanent}}" disabled />
+        </view>
+      </view>
+      <view class="dialog-field">
+        <view class="dialog-field-row">
+          <text class="dialog-label">优先级</text>
+          <view class="priority-options">
+            <view class="priority-option {{viewPriority === 'high' ? 'active high' : ''}}">高级</view>
+            <view class="priority-option {{viewPriority === 'normal' ? 'active normal' : ''}}">普通</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </van-dialog>
+
   <!-- 编辑对话框 -->
   <van-dialog
     use-slot
-    title="编辑待办"
+    title="编辑"
     show="{{showEditDialog}}"
     show-cancel-button
     bind:confirm="onSaveEdit"
@@ -65,19 +132,20 @@
     confirm-button-color="#1989fa">
     <view class="edit-dialog">
       <view class="dialog-field">
-        <text class="dialog-label">待办标题</text>
-        <input class="dialog-input" value="{{editTitle}}" bindinput="onEditTitleInput" placeholder="请输入待办标题"/>
+        <text class="dialog-label">标题</text>
+        <input class="dialog-input" value="{{editTitle}}" bindinput="onEditTitleChange" placeholder="请输入标题" />
       </view>
       <view class="dialog-field">
-        <text class="dialog-label">详细内容</text>
-        <textarea class="dialog-textarea" value="{{editContent}}" bindinput="onEditContentInput" placeholder="请输入详细内容（可选）"/>
+        <text class="dialog-label">内容</text>
+        <textarea class="dialog-textarea" value="{{editContent}}" bindinput="onEditContentChange" placeholder="请输入内容" />
       </view>
       <view class="dialog-field">
-        <text class="dialog-label">重要程度</text>
-        <view class="importance-selector">
-          <view class="importance-option {{editImportance === 1 ? 'selected' : ''}}" bindtap="onSelectImportance" data-value="1">低</view>
-          <view class="importance-option {{editImportance === 2 ? 'selected' : ''}}" bindtap="onSelectImportance" data-value="2">中</view>
-          <view class="importance-option {{editImportance === 3 ? 'selected' : ''}}" bindtap="onSelectImportance" data-value="3">高</view>
+        <view class="dialog-field-row">
+          <text class="dialog-label">优先级</text>
+          <view class="priority-options">
+            <view class="priority-option {{editPriority === 'high' ? 'active high' : ''}}" bindtap="onPriorityChange" data-value="high">高级</view>
+            <view class="priority-option {{editPriority === 'normal' ? 'active normal' : ''}}" bindtap="onPriorityChange" data-value="normal">普通</view>
+          </view>
         </view>
       </view>
     </view>
