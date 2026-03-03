@@ -235,7 +235,8 @@ const abandonCacheTodo = (id) => {
   const dateUtil = require('./dateUtil.js');
   updateInCache(id, {
     completed: 'abandoned',
-    endDate: dateUtil.getTodayKey()
+    endDate: dateUtil.getTodayKey(),
+    permanent: false
   });
 };
 

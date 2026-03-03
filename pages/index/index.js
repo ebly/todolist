@@ -42,9 +42,6 @@ Page({
 
   onShow() {
     pageMixin.handleOnShow.call(this);
-    // 打印当前缓存
-    const cachedTodos = todoCache.getCache();
-    console.log('【任务页】当前缓存:', cachedTodos);
   },
 
   clearPageData() {
@@ -77,12 +74,7 @@ Page({
   refreshFromCache() {
     pageMixin.refreshPageFromCache.call(this, (cachedTodos, dataSource) => {
       const currentDateKey = this.data.currentDateKey || dateUtil.getTodayKey();
-      console.log('【任务页】当前日期:', currentDateKey);
-      console.log('【任务页】缓存任务数:', cachedTodos ? cachedTodos.length : 0);
-      console.log('【任务页】缓存数据:', cachedTodos);
       const todayTodos = todoFilters.filterTodayTodos(cachedTodos, currentDateKey);
-      console.log('【任务页】今日任务数:', todayTodos.length);
-      console.log('【任务页】今日任务:', todayTodos);
       const processedTodos = dataLoader.processTodosWithProgress(todayTodos, currentDateKey);
       this.updateTodoData(processedTodos, dataSource);
     });

@@ -58,9 +58,6 @@ Page({
 
   onShow() {
     pageMixin.handleOnShow.call(this);
-    // 打印当前缓存
-    const cachedTodos = todoCache.getCache();
-    console.log('【日历页】当前缓存:', cachedTodos);
   },
 
   clearPageData() {

@@ -1,0 +1,9 @@
+fix: bug fixes and code improvements
+
+- Fix pageMixin.syncToIndexPage context error
+- Fix history.js function calls
+- Fix filterMonthTodos month calculation
+- Fix generateCalendar dateKey duplication
+- Fix filterTodayTodos to show completed tasks
+- Optimize van-swipe-cell rendering
+- Update README documentation
