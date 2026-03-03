@@ -1,12 +1,12 @@
-const storage = require('../../utils/storage.js');
-const dateUtil = require('../../utils/dateUtil.js');
-const mixin = require('../../utils/todoMixin.js');
-const pageManager = require('../../utils/pageManager.js');
 const auth = require('../../utils/auth.js');
+const storage = require('../../utils/storage.js');
 const todoCache = require('../../utils/todoCache.js');
+const dateUtil = require('../../utils/dateUtil.js');
 const dataLoader = require('../../utils/dataLoader.js');
-
-let isLoading = false;
+const pageManager = require('../../utils/pageManager.js');
+const pageMixin = require('../../utils/pageMixin.js');
+const todoFilters = require('../../utils/todoFilters.js');
+const loadingManager = require('../../utils/loadingManager.js');
 
 Page({
   data: {
@@ -14,12 +14,10 @@ Page({
     filteredTodos: [],
     highPriorityTodos: [],
     normalPriorityTodos: [],
-    activeFilter: 'all',
     currentDate: '',
     titleDate: '',
     currentDateKey: '',
-    showAbandonDialog: false,
-    abandonTodoId: '',
+    activeFilter: 'all',
     showViewDialog: false,
     viewTitle: '',
     viewContent: '',
@@ -27,11 +25,14 @@ Page({
     viewPermanent: false,
     viewPriority: 'normal',
     showEditDialog: false,
+    editingTodo: null,
     editTitle: '',
     editContent: '',
     editPriority: 'normal',
-    editingTodo: null,
-    initialized: false
+    showAbandonDialog: false,
+    abandonTodoId: '',
+    initialized: false,
+    dataSource: ''
   },
 
   onLoad() {
@@ -40,18 +41,19 @@ Page({
   },
 
   onShow() {
-    if (!this.data.initialized) {
-      return;
-    }
-    
-    if (!auth.checkLogin()) {
-      this.setData({ todos: [], filteredTodos: [], highPriorityTodos: [], normalPriorityTodos: [] });
-      return;
-    }
-    
-    const { needRefresh } = pageManager.checkRefreshNeeded();
-    // 如果需要刷新则从后台获取，否则从缓存拉取
-    this.loadTodos(needRefresh);
+    pageMixin.handleOnShow.call(this);
+    // 打印当前缓存
+    const cachedTodos = todoCache.getCache();
+    console.log('【任务页】当前缓存:', cachedTodos);
+  },
+
+  clearPageData() {
+    this.setData({
+      todos: [],
+      filteredTodos: [],
+      highPriorityTodos: [],
+      normalPriorityTodos: []
+    });
   },
 
   initDate() {
@@ -69,96 +71,51 @@ Page({
   },
 
   async initialLoad() {
-    if (!auth.checkLogin()) {
-      this.setData({ initialized: true, todos: [], filteredTodos: [], highPriorityTodos: [], normalPriorityTodos: [] });
-      return;
-    }
-    
-    await this.loadTodos(false);
-    this.setData({ initialized: true });
+    await pageMixin.handleInitialLoad.call(this);
   },
 
-  async loadTodos(forceRefresh = false) {
-    console.log('[Index] loadTodos - forceRefresh:', forceRefresh);
-    if (!auth.checkLogin()) {
-      this.setData({ todos: [], filteredTodos: [], highPriorityTodos: [], normalPriorityTodos: [] });
-      return;
-    }
-
-    if (isLoading) return;
-    isLoading = true;
-
-    const currentDateKey = this.data.currentDateKey || dateUtil.getTodayKey();
-    
-    if (!forceRefresh) {
-      const cachedTodos = todoCache.getCache();
-      console.log('[Index] 尝试使用缓存，缓存是否存在:', !!cachedTodos, '缓存数量:', cachedTodos ? cachedTodos.length : 0);
-      if (cachedTodos) {
-        console.log('[Index] 使用缓存数据:', JSON.stringify(cachedTodos, null, 2));
-        const todayTodos = this.filterTodayTodos(cachedTodos, currentDateKey);
-        console.log('[Index] 过滤后今日任务数量:', todayTodos.length);
-        const processedTodos = dataLoader.processTodosWithProgress(todayTodos, currentDateKey);
-        this.updateTodoData(processedTodos);
-        isLoading = false;
-        return;
-      }
-    }
-
-    wx.showLoading({ title: '加载中' });
-    try {
-      console.log('[Index] 从后台获取数据');
-      const allTodos = await storage.getAllTodos();
-      
-      todoCache.setCache(allTodos);
-      pageManager.clearLoginRefreshPending();
-      pageManager.clearDataChangedPending();
-      
-      const todayTodos = this.filterTodayTodos(allTodos, currentDateKey);
+  refreshFromCache() {
+    pageMixin.refreshPageFromCache.call(this, (cachedTodos, dataSource) => {
+      const currentDateKey = this.data.currentDateKey || dateUtil.getTodayKey();
+      console.log('【任务页】当前日期:', currentDateKey);
+      console.log('【任务页】缓存任务数:', cachedTodos ? cachedTodos.length : 0);
+      console.log('【任务页】缓存数据:', cachedTodos);
+      const todayTodos = todoFilters.filterTodayTodos(cachedTodos, currentDateKey);
+      console.log('【任务页】今日任务数:', todayTodos.length);
+      console.log('【任务页】今日任务:', todayTodos);
       const processedTodos = dataLoader.processTodosWithProgress(todayTodos, currentDateKey);
-      this.updateTodoData(processedTodos);
-    } catch (e) {
-      console.error('[Index] loadTodos error:', e);
-    } finally {
-      wx.hideLoading();
-      isLoading = false;
-    }
-  },
-
-  updateTodoData(todos) {
-    const { activeFilter } = this.data;
-    let filteredTodos = todos;
-
-    // 根据筛选条件过滤
-    if (activeFilter === 'active') {
-      filteredTodos = todos.filter(t => !t.completed);
-    } else if (activeFilter === 'completed') {
-      filteredTodos = todos.filter(t => t.completed);
-    }
-
-    // 按优先级分组（重要性3为高优先级，1和2为普通优先级）
-    const highPriorityTodos = filteredTodos.filter(t => t.importance === 3);
-    const normalPriorityTodos = filteredTodos.filter(t => t.importance !== 3);
-
-    this.setData({
-      todos: todos,
-      filteredTodos: filteredTodos,
-      highPriorityTodos: highPriorityTodos,
-      normalPriorityTodos: normalPriorityTodos
+      this.updateTodoData(processedTodos, dataSource);
     });
   },
 
-  filterTodayTodos(todos, currentDateKey) {
-    return (todos || []).filter(todo => {
-      // 先判断是否在日期范围内
-      const inDateRange = todo.permanent
-        ? (todo.startDate <= currentDateKey)
-        : (todo.startDate <= currentDateKey && todo.endDate >= currentDateKey);
+  async loadFromServer() {
+    if (loadingManager.getIsLoading()) return;
 
-      if (!inDateRange) return false;
+    const currentDateKey = this.data.currentDateKey || dateUtil.getTodayKey();
 
-      // 再判断是否显示
-      if (!todo.completed) return true;
-      return todo.endDate === currentDateKey;
+    await loadingManager.withLoading(async () => {
+      const allTodos = await storage.getAllTodos();
+
+      todoCache.setCache(allTodos);
+      pageManager.clearLoginRefreshPending();
+
+      const todayTodos = todoFilters.filterTodayTodos(allTodos, currentDateKey);
+      const processedTodos = dataLoader.processTodosWithProgress(todayTodos, currentDateKey);
+      this.updateTodoData(processedTodos, 'server');
+    }, '加载中');
+  },
+
+  updateTodoData(todos, source = '') {
+    const { activeFilter } = this.data;
+    const filteredTodos = todoFilters.filterTodosByStatus(todos, activeFilter);
+    const { highPriorityTodos, normalPriorityTodos } = todoFilters.groupTodosByPriority(filteredTodos);
+
+    this.setData({
+      todos,
+      filteredTodos,
+      highPriorityTodos,
+      normalPriorityTodos,
+      dataSource: source
     });
   },
 
@@ -175,22 +132,20 @@ Page({
     if (!id) return;
     e.stopPropagation && e.stopPropagation();
 
-    wx.showLoading({ title: '处理中' });
-    const result = await storage.toggleTodo(id);
-    wx.hideLoading();
+    const result = await loadingManager.withLoading(
+      () => storage.toggleTodo(id),
+      '处理中'
+    );
 
     if (result !== null) {
       wx.showToast({ title: result === 'done' ? '已完成' : '已取消', icon: 'success' });
-      // 更新本地缓存
-      todoCache.toggleCacheTodo(id, result);
-      pageManager.setDataChangedPending();
-      this.loadTodos(true);
+      pageMixin.afterOperation.call(this, 'toggle', id, result);
     }
   },
 
   onAbandonTodo(e) {
     if (!auth.checkLogin()) return;
-    
+
     const id = e.currentTarget.dataset.id;
     if (!id) return;
     e.stopPropagation && e.stopPropagation();
@@ -207,16 +162,14 @@ Page({
     const id = this.data.abandonTodoId;
     if (!id) return;
 
-    wx.showLoading({ title: '处理中' });
-    const result = await storage.abandonTodo(id);
-    wx.hideLoading();
+    const result = await loadingManager.withLoading(
+      () => storage.abandonTodo(id),
+      '处理中'
+    );
 
     if (result) {
       wx.showToast({ title: '已放弃', icon: 'success' });
-      // 更新本地缓存
-      todoCache.abandonCacheTodo(id);
-      pageManager.setDataChangedPending();
-      this.loadTodos(true);
+      pageMixin.afterOperation.call(this, 'abandon', id);
     }
 
     this.setData({
@@ -246,8 +199,12 @@ Page({
     if (!auth.checkLogin()) return;
 
     const id = e.currentTarget.dataset.id;
+    this.refreshFromCache();
+
     const todo = this.data.todos.find(item => item._id === id);
-    if (!todo) return;
+    if (!todo) {
+      return;
+    }
 
     this.setData({
       showViewDialog: true,
@@ -274,21 +231,29 @@ Page({
     if (!auth.checkLogin()) return;
 
     const id = e.currentTarget.dataset.id;
+    if (!id) return;
+    e.stopPropagation && e.stopPropagation();
+
     const todo = this.data.todos.find(item => item._id === id);
     if (!todo) return;
 
     this.setData({
       showEditDialog: true,
+      editingTodo: todo,
       editTitle: todo.title || '',
       editContent: todo.content || '',
-      editPriority: todo.importance === 3 ? 'high' : 'normal',
-      editingTodo: todo
+      editPriority: todo.importance === 3 ? 'high' : 'normal'
     });
   },
 
-  onPriorityChange(e) {
-    const value = e.currentTarget.dataset.value;
-    this.setData({ editPriority: value });
+  onCloseEdit() {
+    this.setData({
+      showEditDialog: false,
+      editingTodo: null,
+      editTitle: '',
+      editContent: '',
+      editPriority: 'normal'
+    });
   },
 
   onEditTitleChange(e) {
@@ -299,9 +264,14 @@ Page({
     this.setData({ editContent: e.detail.value });
   },
 
+  onPriorityChange(e) {
+    const value = e.currentTarget.dataset.value;
+    this.setData({ editPriority: value });
+  },
+
   async onSaveEdit() {
     if (!auth.checkLogin()) return;
-    
+
     const todo = this.data.editingTodo;
     if (!todo) return;
 
@@ -311,34 +281,31 @@ Page({
       return;
     }
 
-    wx.showLoading({ title: '保存中' });
-    try {
-      const result = await storage.updateTodo(todo._id, {
-        title: title,
-        content: this.data.editContent.trim(),
-        importance: this.data.editPriority === 'high' ? 3 : 2
-      });
+    const updateData = {
+      title: title,
+      content: this.data.editContent.trim(),
+      importance: this.data.editPriority === 'high' ? 3 : 2
+    };
 
-      if (result) {
-        wx.showToast({ title: '保存成功', icon: 'success' });
-        pageManager.setDataChangedPending();
-        this.loadTodos(true);
-      } else {
-        wx.showToast({ title: '保存失败', icon: 'none' });
-      }
-    } catch (e) {
-      console.error('[Index] 保存编辑失败:', e);
+    const result = await loadingManager.withLoading(
+      () => storage.updateTodo(todo._id, updateData),
+      '保存中'
+    );
+
+    if (result) {
+      wx.showToast({ title: '保存成功', icon: 'success' });
+      pageMixin.afterOperation.call(this, 'update', todo._id, updateData);
+    } else {
       wx.showToast({ title: '保存失败', icon: 'none' });
-    } finally {
-      wx.hideLoading();
-      this.setData({
-        showEditDialog: false,
-        editingTodo: null,
-        editTitle: '',
-        editContent: '',
-        editPriority: 'normal'
-      });
     }
+
+    this.setData({
+      showEditDialog: false,
+      editingTodo: null,
+      editTitle: '',
+      editContent: '',
+      editPriority: 'normal'
+    });
   },
 
   onCancelEdit() {

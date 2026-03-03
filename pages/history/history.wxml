@@ -42,23 +42,25 @@
 
   <block wx:if="{{selectedDateTodos.length > 0}}">
     <view class="todo-cards">
-      <van-swipe-cell right-width="60" wx:for="{{selectedDateTodos}}" wx:key="_id" data-id="{{item._id}}">
-        <view class="todo-card {{item.completed ? 'todo-card-completed' : ''}}">
-          <view class="todo-content" bindtap="{{item.completed ? 'onViewTodo' : 'onEditTodo'}}" data-id="{{item._id}}">
-            <view class="todo-title-row">
-              <text class="todo-title {{item.completed ? 'todo-title-completed' : ''}}">{{item.title}}</text>
-              <view class="tag-group">
-                <view class="priority-tag {{item.importance === 3 ? 'priority-tag-high' : 'priority-tag-normal'}}">{{item.importance === 3 ? '重要' : '普通'}}</view>
-                <view class="status-tag {{item.completed === 'done' ? 'status-completed' : (item.completed === 'abandoned' ? 'status-abandoned' : 'status-active')}}">{{item.completed === 'done' ? '完成' : (item.completed === 'abandoned' ? '放弃' : '进行中')}}</view>
+      <block wx:for="{{selectedDateTodos}}" wx:key="_id">
+        <van-swipe-cell right-width="60" data-id="{{item._id}}">
+          <view class="todo-card {{item.completed ? 'todo-card-completed' : ''}}">
+            <view class="todo-content" bindtap="{{item.completed ? 'onViewTodo' : 'onEditTodo'}}" data-id="{{item._id}}">
+              <view class="todo-title-row">
+                <text class="todo-title {{item.completed ? 'todo-title-completed' : ''}}">{{item.title}}</text>
+                <view class="tag-group">
+                  <view class="priority-tag {{item.importance === 3 ? 'priority-tag-high' : 'priority-tag-normal'}}">{{item.importance === 3 ? '重要' : '普通'}}</view>
+                  <view class="status-tag {{item.completed === 'done' ? 'status-completed' : (item.completed === 'abandoned' ? 'status-abandoned' : 'status-active')}}">{{item.completed === 'done' ? '完成' : (item.completed === 'abandoned' ? '放弃' : '进行中')}}</view>
+                </view>
               </view>
+              <text class="todo-desc" wx:if="{{item.content}}">{{item.content}}</text>
             </view>
-            <text class="todo-desc" wx:if="{{item.content}}">{{item.content}}</text>
           </view>
-        </view>
-        <view slot="right" class="swipe-right-actions">
-          <view class="action-btn action-btn-delete" catchtap="onDeleteTodo" data-id="{{item._id}}">删除</view>
-        </view>
-      </van-swipe-cell>
+          <view slot="right" class="swipe-right-actions">
+            <view class="action-btn action-btn-delete" catchtap="onDeleteTodo" data-id="{{item._id}}">删除</view>
+          </view>
+        </van-swipe-cell>
+      </block>
     </view>
   </block>
   <view class="empty-tip" wx:else>

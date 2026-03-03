@@ -5,7 +5,6 @@
     <view class="filter-tab {{activeFilter === 'active' ? 'active' : ''}}" bindtap="onFilterChange" data-filter="active">进行中</view>
     <view class="filter-tab {{activeFilter === 'completed' ? 'active' : ''}}" bindtap="onFilterChange" data-filter="completed">已完成</view>
   </view>
-
   <scroll-view class="list-container" scroll-y enable-flex>
     <!-- 空状态 -->
     <view class="empty-tip" wx:if="{{!filteredTodos || filteredTodos.length === 0}}">暂无任务</view>

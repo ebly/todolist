@@ -78,20 +78,20 @@ const generateCalendar = (year, month, todayKey, dateStats = {}) => {
   const daysInMonth = getDaysInMonth(year, month);
   const firstDayOfMonth = getFirstDayOfMonth(year, month);
   const days = [];
-  let emptyIndex = 0;
-  
+  const monthPrefix = `${year}-${String(month).padStart(2, '0')}`;
+
   // 填充月初空白
   for (let i = 0; i < firstDayOfMonth; i++) {
-    days.push({ empty: true, dateKey: `empty-start-${i}` });
+    days.push({ empty: true, dateKey: `${monthPrefix}-empty-start-${i}` });
   }
-  
+
   // 填充日期
   for (let i = 1; i <= daysInMonth; i++) {
-    const dateKey = `${year}-${String(month).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+    const dateKey = `${monthPrefix}-${String(i).padStart(2, '0')}`;
     const isToday = dateKey === todayKey;
     const isPast = dateKey < todayKey;
     const isFuture = dateKey > todayKey;
-    
+
     days.push({
       day: i,
       dateKey,
@@ -103,11 +103,11 @@ const generateCalendar = (year, month, todayKey, dateStats = {}) => {
       ...dateStats[dateKey]
     });
   }
-  
+
   // 按周分组
   const weeks = [];
   let currentWeek = [];
-  
+
   for (let i = 0; i < days.length; i++) {
     currentWeek.push(days[i]);
     if (currentWeek.length === 7) {
@@ -115,12 +115,12 @@ const generateCalendar = (year, month, todayKey, dateStats = {}) => {
       currentWeek = [];
     }
   }
-  
+
   // 填充月末空白
   if (currentWeek.length > 0) {
     let endEmptyIndex = 0;
     while (currentWeek.length < 7) {
-      currentWeek.push({ empty: true, dateKey: `empty-end-${endEmptyIndex++}` });
+      currentWeek.push({ empty: true, dateKey: `${monthPrefix}-empty-end-${endEmptyIndex++}` });
     }
     weeks.push({ days: currentWeek });
   }

@@ -135,6 +135,9 @@ const loadMonthTodos = async (year, month, forceRefresh = false, pageInstance = 
         pageInstance.processMonthData(cachedTodos);
       }
     }
+
+    console.log('forceRefresh', forceRefresh);
+    console.log('todoCache.hasCache', todoCache.hasCache());
     
     // 显示加载提示
     if (forceRefresh || !todoCache.hasCache()) {

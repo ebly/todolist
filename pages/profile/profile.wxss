@@ -252,11 +252,6 @@
   padding: 0 20px 8px;
 }
 
-.login-popup-desc {
-  font-size: 14px;
-  color: #969799;
-  padding: 0 20px 20px;
-}
 
 .login-popup-form {
   display: flex;

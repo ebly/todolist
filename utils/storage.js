@@ -33,7 +33,6 @@ const addTodo = async (todoData, startDate, endDate) => {
     const result = await db.collection('todos').add({ data: newTodo });
     return { ...newTodo, _id: result._id };
   } catch (e) {
-    console.error('[Storage] addTodo error:', e);
     return null;
   }
 };
@@ -62,7 +61,6 @@ const getTodosByDate = async (dateKey) => {
       return todo.endDate === dateKey;
     });
   } catch (e) {
-    console.error('[Storage] getTodosByDate error:', e);
     return [];
   }
 };
@@ -95,7 +93,6 @@ const getTodosByMonth = async (year, month) => {
 
     return res.data || [];
   } catch (e) {
-    console.error('[Storage] getTodosByMonth error:', e);
     return [];
   }
 };
@@ -104,7 +101,9 @@ const toggleTodo = async (id) => {
   try {
     const db = getDB();
     const todo = await db.collection('todos').doc(id).get();
-    if (!todo.data) return null;
+    if (!todo.data) {
+      return null;
+    }
 
     const isCompleted = todo.data.completed === 'done';
     const newStatus = isCompleted ? '' : 'done';
@@ -118,7 +117,6 @@ const toggleTodo = async (id) => {
     await db.collection('todos').doc(id).update({ data: updateData });
     return newStatus;
   } catch (e) {
-    console.error('[Storage] toggleTodo error:', e);
     return null;
   }
 };
@@ -128,7 +126,6 @@ const deleteTodo = async (id) => {
     await getDB().collection('todos').doc(id).remove();
     return true;
   } catch (e) {
-    console.error('[Storage] deleteTodo error:', e);
     return false;
   }
 };
@@ -144,7 +141,6 @@ const abandonTodo = async (id) => {
     });
     return true;
   } catch (e) {
-    console.error('[Storage] abandonTodo error:', e);
     return false;
   }
 };
@@ -153,15 +149,13 @@ const clearAllTodos = async () => {
   try {
     const db = getDB();
     const { data } = await db.collection('todos').limit(100).get();
-    
-    await Promise.all(data.map(todo => 
+
+    await Promise.all(data.map(todo =>
       db.collection('todos').doc(todo._id).remove()
     ));
-    
-    console.log('[Storage] clearAllTodos: deleted', data.length, 'todos');
+
     return true;
   } catch (e) {
-    console.error('[Storage] clearAllTodos error:', e);
     return false;
   }
 };
@@ -171,7 +165,6 @@ const updateTodo = async (id, updateData) => {
     await getDB().collection('todos').doc(id).update({ data: updateData });
     return true;
   } catch (e) {
-    console.error('[Storage] updateTodo error:', e);
     return false;
   }
 };
@@ -180,10 +173,10 @@ const getDateStats = async (year, month) => {
   try {
     const todos = await getTodosByMonth(year, month);
     const stats = {};
-    
+
     todos.forEach(todo => {
       if (todo.permanent) return;
-      
+
       const key = todo.startDate;
       if (!stats[key]) {
         stats[key] = { total: 0, completed: 0, hasIncomplete: false, hasCompleted: false };
@@ -196,14 +189,13 @@ const getDateStats = async (year, month) => {
         stats[key].hasIncomplete = true;
       }
     });
-    
+
     Object.values(stats).forEach(stat => {
       stat.hasIncomplete = stat.completed < stat.total;
     });
-    
+
     return stats;
   } catch (e) {
-    console.error('[Storage] getDateStats error:', e);
     return {};
   }
 };
@@ -212,10 +204,8 @@ const getAllTodos = async () => {
   try {
     const db = getDB();
     const { data: todos } = await db.collection('todos').get();
-    console.log('[Storage] 云端数据:', JSON.stringify(todos, null, 2));
     return todos || [];
   } catch (e) {
-    console.error('[Storage] getAllTodos error:', e);
     return [];
   }
 };
@@ -223,18 +213,17 @@ const getAllTodos = async () => {
 const getTodoStats = async () => {
   try {
     const db = wx.cloud.database();
-    
+
     const { data: todos } = await db.collection('todos').where({
       abandoned: false
     }).get();
-    
+
     const total = todos.length;
     const completed = todos.filter(todo => todo.completed).length;
     const pending = total - completed;
-    
+
     return { total, completed, pending };
   } catch (e) {
-    console.error('[Storage] getTodoStats error:', e);
     return { total: 0, completed: 0, pending: 0 };
   }
 };

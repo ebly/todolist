@@ -79,7 +79,6 @@
       <text class="login-popup-app-name">{{loginText.appName}}</text>
     </view>
     <view class="login-popup-title">{{loginText.title}}</view>
-    <view class="login-popup-desc">{{loginText.desc}}</view>
     
     <view class="login-popup-form">
       <button class="login-popup-avatar-btn" open-type="chooseAvatar" bind:chooseavatar="onChooseAvatar">

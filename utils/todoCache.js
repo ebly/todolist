@@ -4,10 +4,8 @@
  * 带缓存大小限制和过期机制
  */
 
-const dateUtil = require('./dateUtil.js');
-
 const CACHE_KEY = 'todo_cache';
-const CACHE_VERSION = '1.1';
+const CACHE_VERSION = '1.3'; // 版本升级，简化缓存结构
 
 // 缓存配置
 const CACHE_CONFIG = {
@@ -21,30 +19,61 @@ const CACHE_CONFIG = {
 
 /**
  * 获取缓存的待办数据
- * @returns {Array|null} 待办列表，无缓存或过期返回null
+ * @returns {Array|undefined} 待办列表数组，无缓存或过期返回undefined
+ * 注意：返回空数组[]表示缓存存在但任务为空，返回undefined表示无缓存
  */
 const getCache = () => {
   try {
     const cache = wx.getStorageSync(CACHE_KEY);
-    if (!cache) return null;
-    
+    if (!cache) return undefined;
+
     // 检查缓存版本
     if (cache.version !== CACHE_VERSION) {
       clearCache();
-      return null;
+      return undefined;
     }
-    
-    // 检查缓存是否过期
+
+    // 检查缓存是否过期（7天）
     if (cache.timestamp && Date.now() - cache.timestamp > CACHE_CONFIG.EXPIRE_TIME) {
-      console.log('[TodoCache] 缓存已过期，自动清理');
       clearCache();
-      return null;
+      return undefined;
     }
-    
-    return cache.data || null;
+
+    // 返回缓存数据，如果没有data字段则返回空数组
+    return cache.data || [];
   } catch (e) {
-    console.error('[TodoCache] getCache error:', e);
-    return null;
+    return undefined;
+  }
+};
+
+/**
+ * 检查是否需要从服务器刷新数据
+ * 只有缓存不存在（从未设置过）或缓存过期时才需要刷新
+ * 空任务列表[]也视为有效缓存，不需要刷新
+ * @returns {boolean} true表示需要刷新，false表示使用缓存
+ */
+const needRefresh = () => {
+  try {
+    const cache = wx.getStorageSync(CACHE_KEY);
+    // 缓存对象不存在，说明从未设置过缓存
+    if (!cache) {
+      return true;
+    }
+
+    // 检查缓存版本
+    if (cache.version !== CACHE_VERSION) {
+      return true;
+    }
+
+    // 检查缓存是否过期（7天）
+    if (cache.timestamp && Date.now() - cache.timestamp > CACHE_CONFIG.EXPIRE_TIME) {
+      return true;
+    }
+
+    // 缓存存在且未过期，即使data是空数组也不需要刷新
+    return false;
+  } catch (e) {
+    return true;
   }
 };
 
@@ -55,41 +84,38 @@ const getCache = () => {
  */
 const cleanupCacheData = (todos) => {
   if (!todos || todos.length === 0) return [];
-  
+
   // 1. 过滤掉过大的单条数据
   let filtered = todos.filter(todo => {
     const size = JSON.stringify(todo).length;
     if (size > CACHE_CONFIG.MAX_ITEM_SIZE) {
-      console.log(`[TodoCache] 待办 ${todo._id} 数据过大(${size}字符)，跳过缓存`);
       return false;
     }
     return true;
   });
-  
+
   // 2. 如果数据量超过限制，清理已完成/已放弃的待办（保留最近30天的）
   if (filtered.length > CACHE_CONFIG.MAX_CACHE_SIZE) {
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    
+
     // 分离活跃待办和已完成待办
     const activeTodos = filtered.filter(t => !t.completed);
     const completedTodos = filtered.filter(t => t.completed);
-    
+
     // 只保留最近30天的已完成待办
     const recentCompleted = completedTodos.filter(t => {
       const todoTime = t.updatedAt ? new Date(t.updatedAt).getTime() : 0;
       return todoTime > thirtyDaysAgo;
     });
-    
+
     // 优先保留活跃待办，然后补充最近的已完成待办
     filtered = [...activeTodos];
     const remainingSlots = CACHE_CONFIG.MAX_CACHE_SIZE - activeTodos.length;
     if (remainingSlots > 0) {
       filtered = filtered.concat(recentCompleted.slice(0, remainingSlots));
     }
-    
-    console.log(`[TodoCache] 缓存数据清理: 原始${todos.length}条 -> 清理后${filtered.length}条`);
   }
-  
+
   return filtered;
 };
 
@@ -101,17 +127,16 @@ const setCache = (todos) => {
   try {
     // 清理数据
     const cleanedTodos = cleanupCacheData(todos);
-    
+
     wx.setStorageSync(CACHE_KEY, {
       version: CACHE_VERSION,
       timestamp: Date.now(),
       data: cleanedTodos
     });
-    
+
     // 检查存储空间使用情况
     checkStorageUsage();
   } catch (e) {
-    console.error('[TodoCache] setCache error:', e);
     // 如果存储失败（可能是空间不足），清除缓存
     if (e.message && e.message.includes('storage')) {
       clearCache();
@@ -126,15 +151,12 @@ const checkStorageUsage = () => {
   try {
     const res = wx.getStorageInfoSync();
     const usagePercent = (res.currentSize / res.limitSize) * 100;
-    console.log(`[TodoCache] 存储使用: ${res.currentSize}KB / ${res.limitSize}KB (${usagePercent.toFixed(1)}%)`);
-    
+
     // 如果使用超过80%，清除缓存
     if (usagePercent > 80) {
-      console.warn('[TodoCache] 存储空间不足，自动清除缓存');
       clearCache();
     }
   } catch (e) {
-    console.error('[TodoCache] checkStorageUsage error:', e);
   }
 };
 
@@ -145,7 +167,6 @@ const clearCache = () => {
   try {
     wx.removeStorageSync(CACHE_KEY);
   } catch (e) {
-    console.error('[TodoCache] clearCache error:', e);
   }
 };
 
@@ -154,7 +175,8 @@ const clearCache = () => {
  * @param {Object} todo 待办对象
  */
 const addToCache = (todo) => {
-  const todos = getCache() || [];
+  const todos = getCache();
+  if (todos === undefined) return;
   todos.unshift(todo);
   setCache(todos);
 };
@@ -165,8 +187,8 @@ const addToCache = (todo) => {
  */
 const removeFromCache = (id) => {
   const todos = getCache();
-  if (!todos) return;
-  
+  if (todos === undefined) return;
+
   const index = todos.findIndex(t => t._id === id);
   if (index > -1) {
     todos.splice(index, 1);
@@ -181,8 +203,8 @@ const removeFromCache = (id) => {
  */
 const updateInCache = (id, updateData) => {
   const todos = getCache();
-  if (!todos) return;
-  
+  if (todos === undefined) return;
+
   const index = todos.findIndex(t => t._id === id);
   if (index > -1) {
     todos[index] = { ...todos[index], ...updateData, updatedAt: new Date() };
@@ -198,7 +220,9 @@ const updateInCache = (id, updateData) => {
 const toggleCacheTodo = (id, status) => {
   const updateData = { completed: status };
   if (status === 'done') {
+    const dateUtil = require('./dateUtil.js');
     updateData.endDate = dateUtil.getTodayKey();
+    updateData.permanent = false;
   }
   updateInCache(id, updateData);
 };
@@ -208,6 +232,7 @@ const toggleCacheTodo = (id, status) => {
  * @param {string} id 待办ID
  */
 const abandonCacheTodo = (id) => {
+  const dateUtil = require('./dateUtil.js');
   updateInCache(id, {
     completed: 'abandoned',
     endDate: dateUtil.getTodayKey()
@@ -219,7 +244,7 @@ const abandonCacheTodo = (id) => {
  * @returns {boolean}
  */
 const hasCache = () => {
-  return !!getCache();
+  return getCache() !== undefined;
 };
 
 /**
@@ -230,10 +255,10 @@ const getCacheStats = () => {
   try {
     const cache = wx.getStorageSync(CACHE_KEY);
     if (!cache) return null;
-    
+
     const data = cache.data || [];
     const size = JSON.stringify(cache).length;
-    
+
     return {
       count: data.length,
       size: `${(size / 1024).toFixed(2)}KB`,
@@ -255,5 +280,6 @@ module.exports = {
   toggleCacheTodo,
   abandonCacheTodo,
   hasCache,
-  getCacheStats
+  getCacheStats,
+  needRefresh
 };
